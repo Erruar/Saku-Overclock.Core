@@ -13,7 +13,7 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0-*" />
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\..\Saku Overclock.Service\ZenStates.Core\ZenStates-Core.csproj" />
       <ProjectReference Include="..\..\Saku Overclock.Shared\Saku Overclock.Shared\Saku Overclock.Shared.csproj" />
+      <ProjectReference Include="..\..\ZenStates.Core\ZenStates-Core.csproj" />
     </ItemGroup>
 </Project>
