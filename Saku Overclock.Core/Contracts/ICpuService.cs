@@ -40,5 +40,6 @@ public interface ICpuService
     void RefreshPowerTable();
     double GetCoreMultiplier(int core);
     float? GetCpuTemperature();
-    void GenerateDebugReport();
+    double ReturnCpuPowerLimit();
+    bool ReturnUndervoltingAvailability();
 }

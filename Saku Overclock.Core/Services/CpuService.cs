@@ -215,13 +215,13 @@ public class CpuService : ICpuService
     public uint SmuCoperCommandMp1
     {
         get => _cpu?.smu.Mp1Smu.SMU_MSG_SetDldoPsmMargin ?? 0;
-        set { if (_cpu != null) _cpu.smu.Mp1Smu.SMU_MSG_SetDldoPsmMargin = value; }
+        set => _cpu?.smu.Mp1Smu.SMU_MSG_SetDldoPsmMargin = value;
     }
 
     public uint SmuCoperCommandRsmu
     {
         get => _cpu?.smu.Rsmu.SMU_MSG_SetDldoPsmMargin ?? 0;
-        set { if (_cpu != null) _cpu.smu.Rsmu.SMU_MSG_SetDldoPsmMargin = value; }
+        set => _cpu?.smu.Rsmu.SMU_MSG_SetDldoPsmMargin = value;
     }
 
     public void SetCoperSingleCore(uint coreMask, int margin) => _cpu?.SetPsmMarginSingleCore(coreMask, margin);
@@ -233,9 +233,17 @@ public class CpuService : ICpuService
     public float SocVoltage => _cpu?.powerTable?.VDDCR_SOC ?? 0;
     public double GetCoreMultiplier(int core) => (_cpu?.GetCoreMulti(core) ?? 0) / 10.0;
     public float? GetCpuTemperature() => _cpu?.GetCpuTemperature();
-
-    public void GenerateDebugReport()
+    public double ReturnCpuPowerLimit() => _cpu?.GetSystemPowerLimit()?.PowerLimit ?? -1;
+    
+    /// <summary>
+    ///  Проверка доступности андервольтинга
+    /// </summary>
+    public bool ReturnUndervoltingAvailability()
     {
-        // Перемещено логирование отчетов в общую директорию ProgramData / Logs
+        if (GetCodenameGeneration() is CodenameGeneration.Fp5 or CodenameGeneration.Am4V1 or CodenameGeneration.Am5
+            || _cpu?.GetPsmMarginSingleCore(0u) != 0u)
+            return true;
+
+        return _cpu?.SetPsmMarginAllCores(0) == true;
     }
 }
