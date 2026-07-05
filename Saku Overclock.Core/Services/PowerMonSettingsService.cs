@@ -3,7 +3,7 @@ using Saku_Overclock.Shared;
 
 namespace Saku_Overclock.Core.Services;
 
-public class PowerMonSettingsService(IFileService fileService)
+public class PowerMonSettingsService(IFileService fileService, IpcHub hub) : IPowerMonSettingsService
 {
     private const string FolderPath = "Saku Overclock/Settings";
     private const string FileName = "PowerMon.json";
@@ -13,7 +13,7 @@ public class PowerMonSettingsService(IFileService fileService)
     private List<string> _notelist = [];
     private readonly Lock _lock = new();
 
-    public void Load()
+    private void Load()
     {
         var loaded = fileService.Read<List<string>>(_folder, FileName);
         if (loaded != null) lock (_lock) _notelist = loaded;
@@ -27,7 +27,10 @@ public class PowerMonSettingsService(IFileService fileService)
         fileService.Save(_folder, FileName, updated);
     }
 
-    public void RegisterIpcHandlers(IpcHub hub) =>
+    public void RegisterIpcHandlers()
+    {
+        Load();
         SettingsIpcRegistrator.RegisterSimpleSettings(hub, "PowerMon",
             Snapshot, ApplyAndSave, IpcJsonContext.Default.ListString);
+    }
 }

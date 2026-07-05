@@ -4,7 +4,7 @@ using Saku_Overclock.Shared.Models;
 
 namespace Saku_Overclock.Core.Services;
 
-public class RtssSettingsService(IFileService fileService)
+public class RtssSettingsService(IFileService fileService, IpcHub hub) : IRtssSettingsService
 {
     private const string FolderPath = "Saku Overclock/Settings";
     private const string FileName = "RtssSettings.json";
@@ -14,7 +14,7 @@ public class RtssSettingsService(IFileService fileService)
     private RtssSettings _settings = new();
     private readonly Lock _lock = new();
 
-    public void Load()
+    private void Load()
     {
         var loaded = fileService.Read<RtssSettings>(_folder, FileName);
         if (loaded != null) lock (_lock) _settings = loaded;
@@ -28,7 +28,10 @@ public class RtssSettingsService(IFileService fileService)
         fileService.Save(_folder, FileName, updated);
     }
 
-    public void RegisterIpcHandlers(IpcHub hub) =>
+    public void RegisterIpcHandlers()
+    {
+        Load();
         SettingsIpcRegistrator.RegisterSimpleSettings(hub, "RtssSettings",
             Snapshot, ApplyAndSave, IpcJsonContext.Default.RtssSettings);
+    }
 }

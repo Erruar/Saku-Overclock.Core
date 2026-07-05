@@ -4,7 +4,7 @@ using Saku_Overclock.Shared.Models;
 
 namespace Saku_Overclock.Core.Services;
 
-public class LocalThemeSettingsService(IFileService fileService)
+public class LocalThemeSettingsService(IFileService fileService, IpcHub hub) : ILocalThemeSettingsService
 {
     private const string FolderPath = "Saku Overclock/Settings/Themes";
     private const string FileName = "ThemeSettings.json";
@@ -18,7 +18,7 @@ public class LocalThemeSettingsService(IFileService fileService)
     };
     private readonly Lock _lock = new();
 
-    public void Load()
+    private void Load()
     {
         var loaded = fileService.Read<LocalThemeSettingsOptions>(_folder, FileName);
         if (loaded != null) lock (_lock) _settings = loaded;
@@ -32,7 +32,10 @@ public class LocalThemeSettingsService(IFileService fileService)
         fileService.Save(_folder, FileName, updated);
     }
 
-    public void RegisterIpcHandlers(IpcHub hub) =>
+    public void RegisterIpcHandlers()
+    {
+        Load();
         SettingsIpcRegistrator.RegisterSimpleSettings(hub, "ThemeSettings",
             Snapshot, ApplyAndSave, IpcJsonContext.Default.LocalThemeSettingsOptions);
+    }
 }
