@@ -39,7 +39,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     private int _currentUpdateErrorCycle;
     private const int MaxErrorsWhileUpdating = 5;
     private volatile string _lastAppliedPreset = string.Empty;
-    private volatile GetSystemInfo.BatteryStatus _batteryStatus = GetSystemInfo.BatteryStatus.Undefined;
+    private GetSystemInfo.BatteryStatus _batteryStatus = GetSystemInfo.BatteryStatus.Undefined;
     private Timer? _debounceTimer;
 
     public void StartAsync(CancellationToken cancellationToken)
