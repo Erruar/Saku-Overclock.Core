@@ -1,4 +1,5 @@
-﻿using Saku_Overclock.Shared.Models;
+﻿using Saku_Overclock.Shared;
+using Saku_Overclock.Shared.Models;
 
 namespace Saku_Overclock.Core.Contracts;
 
@@ -29,4 +30,9 @@ public interface IApplyerService : IDisposable
     /// </summary>
     /// <returns>Имя применённого пресета</returns>
     string GetSelectedPresetName();
+
+    /// <summary>
+    ///     Событие результатов применения пресета
+    /// </summary>
+    event Action<List<ApplyResult>>? OnSettingsApplied;
 }

@@ -9,17 +9,12 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     ICpuService cpuService,
     IApplyerService applyerService,
     IAppSettingsService appSettings,
+    IRtssSettingsService rtssSettings,
+    INotifyIconsService notifyIcons,
     IPresetManagerService presetManager,
     ILogger<BackgroundDataUpdater> logger) : IBackgroundDataUpdater
 {
     private CancellationTokenSource? _cts;
-
-    private readonly IRtssSettingsService
-        _rtssSettings = App.GetService<IRtssSettingsService>(); // Конфиг с настройками модуля RTSS
-
-    private readonly INotifyIconsService
-        _notifyIcons = App.GetService<INotifyIconsService>(); // Конфиг с настройками модуля TrayMon
-
 
     private bool _isRtssUpdated;
 
@@ -46,9 +41,9 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     {
         try
         {
-            if (appSettings.NiIconsEnabled && !_notifyIcons.IsIconsCreated) _notifyIcons.CreateNotifyIcons();
+            if (appSettings.NiIconsEnabled && !notifyIcons.IsIconsCreated) notifyIcons.CreateNotifyIcons();
 
-            _rtssSettings.LoadSettings();
+            rtssSettings.LoadSettings();
         }
         catch (Exception ex)
         {
@@ -176,7 +171,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
         {
             _debounceTimer?.Dispose();
             _cts.Cancel();
-            _notifyIcons.DisposeAllNotifyIcons();
+            notifyIcons.DisposeAllNotifyIcons();
             RtssHandler.ResetOsdText();
         }
     }
@@ -486,7 +481,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
         {
             // RTSS обновление
             if (appSettings.RtssMetricsEnabled)
-                _rtssSettings.UpdateRtssMetrics(sensorsInformation, applyerService.GetSelectedPresetName(),
+                rtssSettings.UpdateRtssMetrics(sensorsInformation, applyerService.GetSelectedPresetName(),
                     (int?)cpuService?.Cores);
             // Сброс RTSS если был включен, но теперь выключен
             else if (_isRtssUpdated)
@@ -502,14 +497,14 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
 
             // Notify Icons обновление
             if (appSettings.NiIconsEnabled)
-                _notifyIcons.UpdateNotifyIcons(sensorsInformation);
+                notifyIcons.UpdateNotifyIcons(sensorsInformation);
             // Очистка иконок если были включены, но теперь выключены
-            else if (_notifyIcons.IsIconsUpdated)
+            else if (notifyIcons.IsIconsUpdated)
                 try
                 {
-                    _notifyIcons.DisposeAllNotifyIcons();
-                    _notifyIcons.IsIconsCreated = false;
-                    _notifyIcons.IsIconsUpdated = false;
+                    notifyIcons.DisposeAllNotifyIcons();
+                    notifyIcons.IsIconsCreated = false;
+                    notifyIcons.IsIconsUpdated = false;
                 }
                 catch (Exception iconsDisposeEx)
                 {
@@ -543,11 +538,11 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
 
         try
         {
-            if (_notifyIcons.IsIconsUpdated)
+            if (notifyIcons.IsIconsUpdated)
             {
-                _notifyIcons.DisposeAllNotifyIcons();
-                _notifyIcons.IsIconsCreated = false;
-                _notifyIcons.IsIconsUpdated = false;
+                notifyIcons.DisposeAllNotifyIcons();
+                notifyIcons.IsIconsCreated = false;
+                notifyIcons.IsIconsUpdated = false;
             }
         }
         catch (Exception ex)

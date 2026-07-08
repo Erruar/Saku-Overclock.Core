@@ -1,4 +1,5 @@
 ﻿using Saku_Overclock.Shared;
+using Saku_Overclock.Shared.Models;
 
 namespace Saku_Overclock.Core.Contracts;
 
@@ -42,4 +43,5 @@ public interface ICpuService
     float? GetCpuTemperature();
     double ReturnCpuPowerLimit();
     bool ReturnUndervoltingAvailability();
+    List<ApplyResult> ApplyPresetInternal(Preset preset);
 }

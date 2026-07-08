@@ -1,7 +1,9 @@
-﻿using Microsoft.Win32;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using ZenStates.Core;
 using Saku_Overclock.Shared;
 using Saku_Overclock.Core.Contracts;
+using Saku_Overclock.Shared.Models;
 using static ZenStates.Core.Cpu;
 
 namespace Saku_Overclock.Core.Services;
@@ -10,11 +12,14 @@ public class CpuService : ICpuService
 {
     private readonly Cpu? _cpu;
     private readonly CodeName _codeName;
+    private ILogger<CpuService> _logger;
 
     public bool IsAvailable { get; }
 
-    public CpuService()
+    public CpuService(ILogger<CpuService> logger)
     {
+        _logger = logger;
+        
         try
         {
             if (!PawnIo.IsInstalled)
@@ -28,8 +33,9 @@ public class CpuService : ICpuService
 
             IsAvailable = true;
         }
-        catch
+        catch (Exception e)
         {
+            logger.LogError(e, "CRITICAL: ZenStates-Core Service start Error");
             IsAvailable = false;
         }
     }
@@ -246,4 +252,99 @@ public class CpuService : ICpuService
 
         return _cpu?.SetPsmMarginAllCores(0) == true;
     }
+    
+    
+    public List<ApplyResult> ApplyPresetInternal(Preset preset)
+    {
+        var results = new List<ApplyResult>();
+
+        if (_cpu == null)
+        {
+            results.Add(new ApplyResult("Apply failed", false, SmuStatus.CORE_UNAVAILABLE));
+            return results;
+        }
+            
+        
+        var isBristol = GetCodenameGeneration() == CodenameGeneration.Fp4;
+
+        // Вспомогательная локальная функция для безопасного применения и записи лога
+        void TryApply(string paramName, Func<SMU.Status> action)
+        {
+            try
+            {
+                var status = action();
+                var isSuccess = status == SMU.Status.OK; 
+                results.Add(new ApplyResult(paramName, isSuccess, (SmuStatus)status));
+                
+                if (!isSuccess)
+                    _logger.LogWarning("Command {ParamName} returned status {Status}", paramName, status);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception applying command {ParamName}", paramName);
+                results.Add(new ApplyResult(paramName, false, SmuStatus.CORE_FAILED));
+            }
+        }
+
+        // ==========================================
+        // 1. CPU Settings
+        // ==========================================
+        if (preset.CpuSettings.CpuMaximumTemperature.IsEnabled)
+        {
+            var tctl = (uint)preset.CpuSettings.CpuMaximumTemperature.Value;
+            TryApply("Tctl Max Temp", () => _cpu.SetTctlMax(tctl));
+        }
+
+        if (preset.CpuSettings.CpuSustainedPowerLimit.IsEnabled)
+        {
+            var limit = (uint)(preset.CpuSettings.CpuSustainedPowerLimit.Value * 1000);
+            if (isBristol)
+            {
+                var time = preset.CpuSettings.CpuBoostTimeSlow.Value * 1000 < 180000 
+                    ? (uint)(preset.CpuSettings.CpuBoostTimeSlow.Value * 1000) 
+                    : 180000;
+                TryApply("STAPM Limit (Bristol)", () => _cpu.SetBristolStapmLimit(limit, time));
+            }
+            else
+            {
+                TryApply("STAPM Limit", () => _cpu.SetStapmLimit(limit));
+            }
+        }
+
+        if (preset.CpuSettings.CpuActualPowerLimit.IsEnabled)
+        {
+            var limit = (uint)(preset.CpuSettings.CpuActualPowerLimit.Value * 1000);
+            TryApply("Fast PPT Limit", () => _cpu.SetFastLimit(limit));
+        }
+
+        // ==========================================
+        // 2. VRM Settings
+        // ==========================================
+        if (preset.VrmSettings.VrmCpuEdcCurrentLimit.IsEnabled)
+        {
+            var edc = (uint)(preset.VrmSettings.VrmCpuEdcCurrentLimit.Value * 1000);
+            if (isBristol)
+            {
+                var socEdc = (uint)(preset.VrmSettings.VrmSocEdcCurrentLimit.Value * 1000);
+                TryApply("EDC/SOC Limit (Bristol)", () => _cpu.SetBristolEdcLimit(edc, socEdc));
+            }
+            else
+            {
+                TryApply("EDC VDD Limit", () => _cpu.SetEDCVDDLimit(edc));
+            }
+        }
+
+        // ==========================================
+        // 3. Curve Optimizer
+        // ==========================================
+        if (preset.CurveOptimizerOptions.CpuCurveOptimizerUndervoltingLevel.IsEnabled)
+        {
+            var coValue = (int)preset.CurveOptimizerOptions.CpuCurveOptimizerUndervoltingLevel.Value;
+            TryApply("Curve Optimizer (All Core)", () => _cpu.SetPsmMarginAllCores(coValue) ? SMU.Status.OK : SMU.Status.FAILED); 
+        }
+
+
+        return results;
+    }
+    
 }
