@@ -34,4 +34,10 @@ public class RtssSettingsService(IFileService fileService, IpcHub hub) : IRtssSe
         SettingsIpcRegistrator.RegisterSimpleSettings(hub, "RtssSettings",
             Snapshot, ApplyAndSave, IpcJsonContext.Default.RtssSettings);
     }
+
+    public bool IsRtssUpdated { get; set; }
+    public void UpdateRtssMetrics(SensorsInformation sensorsInformation, string? appliedPreset, int? coreCount)
+    {
+        throw new NotImplementedException();
+    }
 }
