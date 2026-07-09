@@ -1,5 +1,6 @@
 ﻿using Saku_Overclock.Core.Contracts;
 using Saku_Overclock.Shared;
+using Saku_Overclock.Shared.Models;
 using Saku_Overclock.Shared.Models.PresetSettings;
 
 namespace Saku_Overclock.Core.Services;
@@ -229,51 +230,6 @@ public class SafetyLimits
         get;
         set;
     } = 900;
-}
-
-public class PresetRecommendations
-{
-    public string[] TemperatureLimits
-    {
-        get;
-        init;
-    } = ["80C","90C"];
-    
-    public string[] StapmLimits
-    {
-        get;
-        init;
-    } = ["30W", "35W"];
-
-    public string[] FastLimits
-    {
-        get;
-        init;
-    } = ["35W","45W"];
-    
-    public string[] SlowLimits
-    {
-        get;
-        init;
-    } = ["32W", "37W"];
-    
-    public string[] SlowTime
-    {
-        get;
-        init;
-    } = ["5s", "3s"];
-    
-    public string[] StapmTime
-    {
-        get;
-        init;
-    } = ["300s","700s"];
-    
-    public string[] ProchotRampTime
-    {
-        get;
-        init;
-    } = ["20ms","20ms"];
 }
 
 public class OcFinderService : IOcFinderService

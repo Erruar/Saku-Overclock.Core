@@ -260,7 +260,7 @@ public class CpuService : ICpuService
 
         if (_cpu == null)
         {
-            results.Add(new ApplyResult("Apply failed", false, SmuStatus.CORE_UNAVAILABLE));
+            results.Add(new ApplyResult("Apply failed", false, SmuStatus.CoreUnavailable));
             return results;
         }
             
@@ -282,7 +282,7 @@ public class CpuService : ICpuService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception applying command {ParamName}", paramName);
-                results.Add(new ApplyResult(paramName, false, SmuStatus.CORE_FAILED));
+                results.Add(new ApplyResult(paramName, false, SmuStatus.CoreFailed));
             }
         }
 

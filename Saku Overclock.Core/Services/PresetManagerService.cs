@@ -8,7 +8,7 @@ using Saku_Overclock.Shared.Models;
 namespace Saku_Overclock.Core.Services;
 
 public class PresetManagerService(IFileService fileService, 
-    AppSettingsService appSettings, 
+    IAppSettingsService appSettings, 
     ILogger<PresetManagerService> logger, 
     IpcHub hub) : IPresetManagerService
 {
