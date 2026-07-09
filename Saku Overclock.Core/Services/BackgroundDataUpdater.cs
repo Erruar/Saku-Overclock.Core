@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Saku_Overclock.Contracts.Services;
 using Saku_Overclock.Core.Contracts;
 using Saku_Overclock.Shared.Models;
 

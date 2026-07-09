@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using Microsoft.Extensions.Logging;
+using Saku_Overclock.Contracts.Services;
 using Saku_Overclock.Core.Contracts;
 using Saku_Overclock.Shared;
 using Saku_Overclock.Shared.Ipc;
@@ -17,7 +17,13 @@ public class AppSettingsService(IFileService fileService, IpcHub hub) : IAppSett
     private AppSettings _settings = new();
     private readonly Lock _lock = new();
 
-     public bool FixedTitleBar
+    public Task LoadSettingsAsync()
+    {
+        RegisterIpcHandlers();
+        return Task.CompletedTask;
+    }
+
+    public bool FixedTitleBar
     {
         get => _settings.FixedTitleBar;
         set => _settings.FixedTitleBar = value;
@@ -87,12 +93,6 @@ public class AppSettingsService(IFileService fileService, IpcHub hub) : IAppSett
     {
         get => _settings.NiIconsType;
         set => _settings.NiIconsType = value;
-    }
-
-    public bool PresetsPageViewModeBeginner
-    {
-        get => _settings.PresetsPageViewModeBeginner;
-        set => _settings.PresetsPageViewModeBeginner = value;
     }
 
     public int Preset
