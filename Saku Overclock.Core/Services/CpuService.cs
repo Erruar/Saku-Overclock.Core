@@ -12,7 +12,7 @@ public class CpuService : ICpuService
 {
     private readonly Cpu? _cpu;
     private readonly CodeName _codeName;
-    private ILogger<CpuService> _logger;
+    private readonly ILogger<CpuService> _logger;
 
     public bool IsAvailable { get; }
 
@@ -169,7 +169,7 @@ public class CpuService : ICpuService
     {
         try
         {
-            if (!IsAvailable || _cpu == null) throw new Exception();
+            if (!IsAvailable || _cpu == null) throw new Exception("Core unavailable.");
             var memoryConfig = _cpu.GetMemoryConfig();
             var convertedModules = new List<MemoryModule>();
             foreach (var module in memoryConfig.Modules)
@@ -297,13 +297,10 @@ public class CpuService : ICpuService
 
         if (preset.CpuSettings.CpuSustainedPowerLimit.IsEnabled)
         {
-            var limit = (uint)(preset.CpuSettings.CpuSustainedPowerLimit.Value * 1000);
+            var limit = (uint)(preset.CpuSettings.CpuSustainedPowerLimit.Value);
             if (isBristol)
             {
-                var time = preset.CpuSettings.CpuBoostTimeSlow.Value * 1000 < 180000 
-                    ? (uint)(preset.CpuSettings.CpuBoostTimeSlow.Value * 1000) 
-                    : 180000;
-                TryApply("STAPM Limit (Bristol)", () => _cpu.SetBristolStapmLimit(limit, time));
+                TryApply("STAPM Limit (Bristol)", () => _cpu.SetBristolStapmLimit(limit, (uint)preset.CpuSettings.CpuBoostTimeSlow.Value));
             }
             else
             {
@@ -313,8 +310,7 @@ public class CpuService : ICpuService
 
         if (preset.CpuSettings.CpuActualPowerLimit.IsEnabled)
         {
-            var limit = (uint)(preset.CpuSettings.CpuActualPowerLimit.Value * 1000);
-            TryApply("Fast PPT Limit", () => _cpu.SetFastLimit(limit));
+            TryApply("Fast PPT Limit", () => _cpu.SetFastLimit((uint)preset.CpuSettings.CpuActualPowerLimit.Value));
         }
 
         // ==========================================
@@ -322,11 +318,11 @@ public class CpuService : ICpuService
         // ==========================================
         if (preset.VrmSettings.VrmCpuEdcCurrentLimit.IsEnabled)
         {
-            var edc = (uint)(preset.VrmSettings.VrmCpuEdcCurrentLimit.Value * 1000);
+            var edc = (uint)preset.VrmSettings.VrmCpuEdcCurrentLimit.Value;
             if (isBristol)
             {
-                var socEdc = (uint)(preset.VrmSettings.VrmSocEdcCurrentLimit.Value * 1000);
-                TryApply("EDC/SOC Limit (Bristol)", () => _cpu.SetBristolEdcLimit(edc, socEdc));
+                TryApply("EDC/SOC Limit (Bristol)", () => 
+                    _cpu.SetBristolEdcLimit(edc, (uint)preset.VrmSettings.VrmSocEdcCurrentLimit.Value));
             }
             else
             {

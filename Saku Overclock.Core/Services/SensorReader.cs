@@ -193,6 +193,9 @@ public class SensorReader : ISensorReader
 
         var tableVersion = _cpu.PowerTableVersion;
 
+        if (tableVersion == 0)
+            return;
+        
         var codenameGen = _cpu.GetCodenameGeneration();
 
         // Zen fallback
