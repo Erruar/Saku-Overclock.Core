@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Saku_Overclock.Core.Contracts;
+using Saku_Overclock.Core.Helpers;
 using Saku_Overclock.Shared.Contracts;
 using Saku_Overclock.Shared.Models;
 
@@ -27,8 +28,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     
     private SensorsInformation _sensorsInformation = new();
 
-    // TODO: Update NvidiaGpuMonitor
-    //private NvidiaGpuMonitor? _nvidiaGpuMonitor;
+    private NvidiaGpuMonitor? _nvidiaGpuMonitor;
     private bool _cachedNvidiaGpuUnavailable;
 
     public event EventHandler<SensorsInformation>? DataUpdated;
@@ -38,8 +38,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     private const int MaxErrorsWhileUpdating = 5;
     private volatile string _lastAppliedPreset = string.Empty;
     
-    // TODO: Update Battery Info
-    //private GetSystemInfo.BatteryStatus _batteryStatus = GetSystemInfo.BatteryStatus.Undefined;
+    private BatteryManager.BatteryStatus _batteryStatus = BatteryManager.BatteryStatus.Undefined;
     private Timer? _debounceTimer;
 
     public void StartAsync(CancellationToken cancellationToken)
@@ -110,14 +109,13 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
                         _sensorsInformation.BatteryChargeRate = chargeRate;
                         _sensorsInformation.BatteryLifeTime = batteryLifeTime;
                         
-                        // TODO: Update Battery Info
-                        /*if (_batteryStatus != (GetSystemInfo.BatteryStatus)batteryState)
+                        if (_batteryStatus != (BatteryManager.BatteryStatus)batteryState)
                         {
-                            _batteryStatus = (GetSystemInfo.BatteryStatus)batteryState;
+                            _batteryStatus = (BatteryManager.BatteryStatus)batteryState;
 
                             // Перезапускаем таймер
                             _debounceTimer?.Change(350, Timeout.Infinite);
-                        }*/
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -178,8 +176,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
             _debounceTimer?.Dispose();
             _cts.Cancel();
             notifyIcons.DisposeAllNotifyIcons();
-            // TODO: Update RtssHandler and OSD
-            //RtssHandler.ResetOsdText();
+            RtssHandler.ResetOsdText();
         }
     }
 
@@ -201,20 +198,19 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
         // Если данные о батарее помечены как недоступные, сразу возвращаем флаг и пустые строки
         if (_cachedBatteryUnavailable) return (string.Empty, string.Empty, string.Empty, string.Empty, true);
 
-        /*try
+        try
         {
-            // TODO: Update Battery Info
             var batteryInfo = await Task.Run(() =>
             {
                 // Получаем статические данные батареи
-                var batteryHealth = $"{100 - GetSystemInfo.GetBatteryHealth() * 100:0.##}%";
-                var batteryCycles = GetSystemInfo.GetBatteryCycle().ToString();
+                var batteryHealth = $"{100 - BatteryManager.GetBatteryHealth() * 100:0.##}%";
+                var batteryCycles = BatteryManager.GetBatteryCycle().ToString();
 
-                var fullChargeCapacity = GetSystemInfo.ReadFullChargeCapacity();
-                var designCapacity = GetSystemInfo.ReadDesignCapacity(out var notTrack);
+                var fullChargeCapacity = BatteryManager.ReadFullChargeCapacity();
+                var designCapacity = BatteryManager.ReadDesignCapacity(out var notTrack);
                 var batteryCapacity = $"{fullChargeCapacity}mWh/{designCapacity}mWh";
 
-                var batteryName = GetSystemInfo.GetBatteryName() ?? "Unknown";
+                var batteryName = BatteryManager.GetBatteryName() ?? "Unknown";
 
                 // Кешируем
                 _cachedBatteryUnavailable = notTrack;
@@ -225,11 +221,11 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
             return batteryInfo;
         }
         catch
-        {*/
+        {
             // Батарея недоступна
             _cachedBatteryUnavailable = true;
             return (string.Empty, string.Empty, string.Empty, string.Empty, true);
-        //}
+        }
     }
 
     private async Task<(
@@ -242,16 +238,15 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
         // Если данные о батарее помечены как недоступные, сразу возвращаем пустые значения
         if (_cachedBatteryUnavailable) return (0, 10, 0, 0);
 
-        /*try
+        try
         {
-            // TODO: Update Battery Info
             var batteryInfo = await Task.Run(() =>
             {
                 // Получаем только часто меняющиеся параметры
-                var batteryPercent = GetSystemInfo.GetBatteryPercent();
-                var batteryState = (int)GetSystemInfo.GetBatteryStatus();
-                var chargeRate = (double)(GetSystemInfo.GetBatteryRate() / 1000);
-                var batteryLifeTime = GetSystemInfo.GetBatteryLifeTime();
+                var batteryPercent = BatteryManager.GetBatteryPercent();
+                var batteryState = (int)BatteryManager.GetBatteryStatus();
+                var chargeRate = (double)(BatteryManager.GetBatteryRate() / 1000);
+                var batteryLifeTime = BatteryManager.GetBatteryLifeTime();
 
                 return ((int)batteryPercent, batteryState, chargeRate, batteryLifeTime);
             });
@@ -259,10 +254,10 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
             return batteryInfo;
         }
         catch
-        {*/
+        {
             // Батарея недоступна
             return (0, 10, 0, 0);
-        //}
+        }
     }
 
 
@@ -272,21 +267,20 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
         {
             // 1. Определяем целевой ID пресета с помощью switch-выражения
             
-            // TODO: Update Battery Info
-            var targetPresetId = /*_batteryStatus switch
+            var targetPresetId = _batteryStatus switch
             {
-                GetSystemInfo.BatteryStatus.Charging or
-                    GetSystemInfo.BatteryStatus.ChargingAndHigh or
-                    GetSystemInfo.BatteryStatus.ChargingAndLow or
-                    GetSystemInfo.BatteryStatus.ChargingAndCritical or
-                    GetSystemInfo.BatteryStatus.PartiallyCharged or
-                    GetSystemInfo.BatteryStatus.AcConnected or
-                    GetSystemInfo.BatteryStatus.FullyCharged => appSettings.AcPreset,
+                BatteryManager.BatteryStatus.Charging or
+                    BatteryManager.BatteryStatus.ChargingAndHigh or
+                    BatteryManager.BatteryStatus.ChargingAndLow or
+                    BatteryManager.BatteryStatus.ChargingAndCritical or
+                    BatteryManager.BatteryStatus.PartiallyCharged or
+                    BatteryManager.BatteryStatus.AcConnected or
+                    BatteryManager.BatteryStatus.FullyCharged => appSettings.AcPreset,
 
-                GetSystemInfo.BatteryStatus.Undefined => null,
+                BatteryManager.BatteryStatus.Undefined => null,
 
-                _ => */appSettings.BatteryPreset // Все остальные статусы (разрядка)
-            /*}*/;
+                _ => appSettings.BatteryPreset // Все остальные статусы (разрядка)
+            };
 
             if (string.IsNullOrEmpty(targetPresetId) || targetPresetId == _lastAppliedPreset) return;
 
@@ -397,8 +391,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
 
         try
         {
-            // TODO: Update NvidiaGpuMonitor
-            //_nvidiaGpuMonitor ??= new NvidiaGpuMonitor();
+            _nvidiaGpuMonitor ??= new NvidiaGpuMonitor();
         }
         catch
         {
@@ -418,8 +411,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     {
         try
         {
-            // TODO: Update NvidiaGpuMonitor
-            /*if (InitializeNvidiaGpu() && _nvidiaGpuMonitor != null)
+            if (InitializeNvidiaGpu() && _nvidiaGpuMonitor != null)
             {
                 if (_cachedStaticNvidiaGpuInfo.Count > 0 && _cachedStaticNvidiaGpuInfo[0] == "Unknown")
                 {
@@ -438,7 +430,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
                     _cachedStaticNvidiaGpuInfo[2],
                     _cachedStaticNvidiaGpuInfo[3]
                 );
-            }*/
+            }
 
             return ("Error", "Error", "Error", "Error");
         }
@@ -457,8 +449,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     {
         try
         {
-            // TODO: Update NvidiaGpuMonitor
-            /*if (InitializeNvidiaGpu() && _nvidiaGpuMonitor != null)
+            if (InitializeNvidiaGpu() && _nvidiaGpuMonitor != null)
             {
                 var runtime = _nvidiaGpuMonitor.GetRuntimeData();
 
@@ -468,7 +459,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
                     runtime.GpuCoreClock,
                     runtime.MemoryClock
                 );
-            }*/
+            }
 
             return (0, 0, 0, 0);
         }
@@ -501,8 +492,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
             else if (_isRtssUpdated)
                 try
                 {
-                    // TODO: Update RtssHandler and OSD
-                    //RtssHandler.ResetOsdText();
+                    RtssHandler.ResetOsdText();
                     _isRtssUpdated = false;
                 }
                 catch (Exception rtssResetEx)
@@ -542,8 +532,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
         {
             if (_isRtssUpdated)
             {
-                // TODO: Update RtssHandler and OSD
-                //RtssHandler.ResetOsdText();
+                RtssHandler.ResetOsdText();
                 _isRtssUpdated = false;
             }
         }
