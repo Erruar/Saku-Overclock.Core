@@ -58,8 +58,7 @@ public partial class ApplyerService(
                     {
                         if (settingsService.ReapplyOverclock)
                         {
-                            // Переприменяем объект Preset напрямую, без строковых костылей
-                            await Task.Run(() => cpuService.ApplyPresetInternal(preset));
+                            cpuService.ApplyPresetInternal(preset);
                         }
                     }
                     catch (Exception ex)

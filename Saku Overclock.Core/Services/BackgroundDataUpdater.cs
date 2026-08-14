@@ -13,6 +13,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     IRtssSettingsService rtssSettings,
     INotifyIconsService notifyIcons,
     IPresetManagerService presetManager,
+    ISharedMemoryWriterService sharedMemoryWriter,
     ILogger<BackgroundDataUpdater> logger) : IBackgroundDataUpdater
 {
     private CancellationTokenSource? _cts;
@@ -132,6 +133,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
 
                     DataUpdated?.Invoke(this, _sensorsInformation);
 
+                    sharedMemoryWriter.UpdateSharedMemory(_sensorsInformation);
                     UpdateTrayMonAndRtss(_sensorsInformation);
                 }
                 catch (OperationCanceledException)
