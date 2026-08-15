@@ -2,11 +2,11 @@
 
 namespace Saku_Overclock.Core.Helpers;
 
-public sealed class NvidiaGpuMonitor
+public sealed unsafe class NvidiaGpuMonitor
 {
     private readonly NvApi.NvPhysicalGpuHandle _handle;
     private readonly NvApi.NvDisplayHandle _displayHandle;
-    private readonly int _clockVersion;
+    private readonly uint _clockVersion;
     private readonly bool _hasDisplayHandle;
 
     public struct RuntimeData
@@ -28,7 +28,6 @@ public sealed class NvidiaGpuMonitor
 
     public NvidiaGpuMonitor(int adapterIndex = 0)
     {
-        // Инициализация NvApi
         if (!NvApi.IsAvailable)
         {
             NvApi.Initialize();
@@ -39,11 +38,12 @@ public sealed class NvidiaGpuMonitor
             throw new Exception("NvApi not available");
         }
 
-        // Получаем GPU handles
-        var handles = new NvApi.NvPhysicalGpuHandle[NvApi.MaxPhysicalGpus];
-        var count = 0;
-        if ((NvApi.NvApiEnumPhysicalGpUs != null &&
-             NvApi.NvApiEnumPhysicalGpUs(handles, out count) != NvApi.NvStatus.Ok) || count == 0)
+        // Используем stackalloc вместо аллокации массива
+        var handles = stackalloc NvApi.NvPhysicalGpuHandle[NvApi.MaxPhysicalGpus];
+        int count = 0;
+        
+        if (NvApi.NvApiEnumPhysicalGpUs == null || 
+            NvApi.NvApiEnumPhysicalGpUs(handles, &count) != NvApi.NvStatus.Ok || count == 0)
         {
             throw new Exception("Failed to enumerate GPUs");
         }
@@ -55,26 +55,25 @@ public sealed class NvidiaGpuMonitor
 
         _handle = handles[adapterIndex];
 
-        // Получаем display handle
         NvApi.NvDisplayHandle tempHandle = default;
         _hasDisplayHandle = NvApi.NvApiEnumNvidiaDisplayHandle != null &&
-                            NvApi.NvApiEnumNvidiaDisplayHandle(adapterIndex, ref tempHandle) == NvApi.NvStatus.Ok;
+                            NvApi.NvApiEnumNvidiaDisplayHandle(adapterIndex, &tempHandle) == NvApi.NvStatus.Ok;
         if (_hasDisplayHandle)
         {
             _displayHandle = tempHandle;
         }
 
-        // Определяем версию Clock API (пробуем версии 1, 2, 3)
         _clockVersion = 0;
-        for (var ver = 1; ver <= 3; ver++)
+        for (uint ver = 1; ver <= 3; ver++)
         {
             var clockFreq = new NvApi.NvGpuClockFrequencies
             {
-                Version = (uint)NvApi.MAKE_NVAPI_VERSION<NvApi.NvGpuClockFrequencies>(ver)
+                Version = NvApi.MAKE_NVAPI_VERSION<NvApi.NvGpuClockFrequencies>(ver)
             };
 
+            // Передаем по указателю
             if (NvApi.NvApiGpuGetAllClockFrequencies != null &&
-                NvApi.NvApiGpuGetAllClockFrequencies(_handle, ref clockFreq) == NvApi.NvStatus.Ok)
+                NvApi.NvApiGpuGetAllClockFrequencies(_handle, &clockFreq) == NvApi.NvStatus.Ok)
             {
                 _clockVersion = ver;
                 break;
@@ -88,7 +87,7 @@ public sealed class NvidiaGpuMonitor
     }
 
     /// <summary>
-    ///     Получить данные реального времени (оптимизировано для частого вызова)
+    ///     Получить данные реального времени (выделений в куче: 0 байт)
     /// </summary>
     public RuntimeData GetRuntimeData()
     {
@@ -97,294 +96,187 @@ public sealed class NvidiaGpuMonitor
         // 1. Загрузка GPU
         var pStatesInfo = new NvApi.NvDynamicPStatesInfo
         {
-            Version = (uint)NvApi.MAKE_NVAPI_VERSION<NvApi.NvDynamicPStatesInfo>(1),
-            Utilizations = new NvApi.NvDynamicPState[NvApi.MaxGpuUtilization]
+            Version = NvApi.MAKE_NVAPI_VERSION<NvApi.NvDynamicPStatesInfo>(1)
         };
 
         if (NvApi.NvApiGpuGetDynamicPstatesInfoEx != null &&
-            NvApi.NvApiGpuGetDynamicPstatesInfoEx(_handle, ref pStatesInfo) == NvApi.NvStatus.Ok)
+            NvApi.NvApiGpuGetDynamicPstatesInfoEx(_handle, &pStatesInfo) == NvApi.NvStatus.Ok)
         {
-            // Index 0 = GPU Core utilization
-            if (pStatesInfo.Utilizations[0].IsPresent)
+            var util = pStatesInfo.GetUtilizations();
+            if (util[0].IsPresent)
             {
-                data.GpuLoad = pStatesInfo.Utilizations[0].Percentage;
+                data.GpuLoad = util[0].Percentage;
             }
         }
 
         // 2. Частоты (GPU Core и Memory)
         var clockFreq = new NvApi.NvGpuClockFrequencies
         {
-            Version = (uint)NvApi.MAKE_NVAPI_VERSION<NvApi.NvGpuClockFrequencies>(_clockVersion),
-            Clocks = new NvApi.NvGpuClockFrequenciesDomain[NvApi.MaxGpuPublicClocks]
+            Version = NvApi.MAKE_NVAPI_VERSION<NvApi.NvGpuClockFrequencies>(_clockVersion)
         };
 
         if (NvApi.NvApiGpuGetAllClockFrequencies != null &&
-            NvApi.NvApiGpuGetAllClockFrequencies(_handle, ref clockFreq) == NvApi.NvStatus.Ok)
+            NvApi.NvApiGpuGetAllClockFrequencies(_handle, &clockFreq) == NvApi.NvStatus.Ok)
         {
-            // Index 0 = Graphics (GPU Core)
-            if (clockFreq.Clocks[(int)NvApi.NvGpuPublicClockId.Graphics].IsPresent)
-            {
-                data.GpuCoreClock = clockFreq.Clocks[(int)NvApi.NvGpuPublicClockId.Graphics].Frequency / 1000f / 1000f;
-            }
+            var clocks = clockFreq.GetClocks();
+            
+            if (clocks[(int)NvApi.NvGpuPublicClockId.Graphics].IsPresent)
+                data.GpuCoreClock = clocks[(int)NvApi.NvGpuPublicClockId.Graphics].Frequency / 1000f / 1000f;
 
-            // Index 4 = Memory
-            if (clockFreq.Clocks[(int)NvApi.NvGpuPublicClockId.Memory].IsPresent)
-            {
-                data.MemoryClock = clockFreq.Clocks[(int)NvApi.NvGpuPublicClockId.Memory].Frequency / 1000f / 1000f;
-            }
+            if (clocks[(int)NvApi.NvGpuPublicClockId.Memory].IsPresent)
+                data.MemoryClock = clocks[(int)NvApi.NvGpuPublicClockId.Memory].Frequency / 1000f / 1000f;
         }
 
         // 3. Температура GPU
         var thermalSettings = new NvApi.NvThermalSettings
         {
-            Version = (uint)NvApi.MAKE_NVAPI_VERSION<NvApi.NvThermalSettings>(2),
-            Count = NvApi.MaxThermalSensorsPerGpu,
-            Sensor = new NvApi.NvSensor[NvApi.MaxThermalSensorsPerGpu]
+            Version = NvApi.MAKE_NVAPI_VERSION<NvApi.NvThermalSettings>(2),
+            Count = NvApi.MaxThermalSensorsPerGpu
         };
 
         if (NvApi.NvApiGpuGetThermalSettings != null &&
-            NvApi.NvApiGpuGetThermalSettings(_handle, (int)NvApi.NvThermalTarget.All, ref thermalSettings) ==
-            NvApi.NvStatus.Ok)
+            NvApi.NvApiGpuGetThermalSettings(_handle, (int)NvApi.NvThermalTarget.All, &thermalSettings) == NvApi.NvStatus.Ok)
         {
             if (thermalSettings.Count > 0)
             {
-                data.GpuTemperature = thermalSettings.Sensor[0].CurrentTemp;
+                data.GpuTemperature = thermalSettings.Sensor0.CurrentTemp;
             }
         }
 
         return data;
     }
 
-    /// <summary>
-    ///     Получить статические данные (вызывать один раз)
-    /// </summary>
     public StaticData GetStaticData()
     {
         var data = new StaticData();
 
-        // 1. Имя GPU
         if (NvApi.NvAPI_GPU_GetFullName(_handle, out var gpuName) == NvApi.NvStatus.Ok)
         {
             data.GpuName = gpuName.Trim();
             if (!data.GpuName.StartsWith("NVIDIA", StringComparison.OrdinalIgnoreCase))
-            {
                 data.GpuName = "NVIDIA " + data.GpuName;
-            }
         }
         else
         {
             data.GpuName = "NVIDIA GPU";
         }
 
-        // 2. Объём памяти
         if (_hasDisplayHandle)
         {
             var memoryInfo = new NvApi.NvMemoryInfo
             {
-                Version = (uint)NvApi.MAKE_NVAPI_VERSION<NvApi.NvMemoryInfo>(2)
+                Version = NvApi.MAKE_NVAPI_VERSION<NvApi.NvMemoryInfo>(2)
             };
 
             if (NvApi.NvApiGpuGetMemoryInfo != null &&
-                NvApi.NvApiGpuGetMemoryInfo(_displayHandle, ref memoryInfo) == NvApi.NvStatus.Ok)
+                NvApi.NvApiGpuGetMemoryInfo(_displayHandle, &memoryInfo) == NvApi.NvStatus.Ok)
             {
-                var totalMemory = (double)memoryInfo.DedicatedVideoMemory / 1024 / 1024; // из KB в GB, есть погрешность
-
-                if (totalMemory == 0)
-                {
-                    totalMemory = GetGpuVramSize(data.GpuName);
-                }
-
-                data.TotalMemory = ClampValue(totalMemory);
+                data.TotalMemory = ClampValue((double)memoryInfo.DedicatedVideoMemory / 1024 / 1024);
             }
-        }
 
-        // 3. Тип памяти (определяем по имени GPU)
-        data.MemoryType = DetermineMemoryType(data.GpuName);
-
-        // 4. Битность шины памяти (примерная оценка)
-        data.MemoryBitWidth = EstimateMemoryBusWidth(data.GpuName);
-
-        // 5. Версия драйвера
-        if (_hasDisplayHandle)
-        {
             var driverVersion = new NvApi.NvDisplayDriverVersion
             {
-                Version = (uint)NvApi.MAKE_NVAPI_VERSION<NvApi.NvDisplayDriverVersion>(1)
+                Version = NvApi.MAKE_NVAPI_VERSION<NvApi.NvDisplayDriverVersion>(1)
             };
 
             if (NvApi.NvApiGetDisplayDriverVersion != null &&
-                NvApi.NvApiGetDisplayDriverVersion(_displayHandle, ref driverVersion) == NvApi.NvStatus.Ok)
+                NvApi.NvApiGetDisplayDriverVersion(_displayHandle, &driverVersion) == NvApi.NvStatus.Ok)
             {
-                var major = (int)(driverVersion.DriverVersion / 100);
-                var minor = (int)(driverVersion.DriverVersion % 100);
+                var major = driverVersion.DriverVersion / 100;
+                var minor = driverVersion.DriverVersion % 100;
                 data.DriverVersion = $"{major}.{minor:00}";
             }
         }
 
-        if (string.IsNullOrWhiteSpace(data.DriverVersion) || data.TotalMemory == 0) 
-        {
-            var (memSize, driver) = GetRegistryGpuDriverInformation(data.GpuName, true);
-            if (string.IsNullOrWhiteSpace(data.DriverVersion))
-            {
-                data.DriverVersion = driver;
-            }
+        data.MemoryType = DetermineMemoryType(data.GpuName);
+        data.MemoryBitWidth = EstimateMemoryBusWidth(data.GpuName);
 
-            if (data.TotalMemory == 0)
-            {
-                memSize = memSize.Replace("GB",string.Empty).Replace("-",string.Empty);
-                if (double.TryParse(memSize, out var registryMemorySize))
-                {
-                    data.TotalMemory = ClampValue(registryMemorySize);
-                }
-            }
+        if (string.IsNullOrWhiteSpace(data.DriverVersion) || data.TotalMemory == 0)
+        {
+            var regInfo = GetRegistryGpuInformation(data.GpuName);
+            
+            if (string.IsNullOrWhiteSpace(data.DriverVersion) && !string.IsNullOrEmpty(regInfo.DriverVersion))
+                data.DriverVersion = regInfo.DriverVersion;
+
+            if (data.TotalMemory == 0 && regInfo.MemoryGb > 0)
+                data.TotalMemory = ClampValue(regInfo.MemoryGb);
         }
 
         return data;
     }
-    
-    public static double GetGpuVramSize(string gpuName)
+
+    /// <summary>
+    ///     Универсальный метод, собирающий память и драйвер за один проход по реестру
+    /// </summary>
+    private static (double MemoryGb, string DriverVersion) GetRegistryGpuInformation(string targetGpuName)
     {
         try
         {
-            using var videoKey = Registry.LocalMachine.OpenSubKey(
-                @"SYSTEM\ControlSet001\Control\Video");
+            using var videoKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\ControlSet001\Control\Video");
+            if (videoKey == null) return (0, string.Empty);
 
-            if (videoKey == null)
+            foreach (var provider in videoKey.GetSubKeyNames())
             {
-                return 0;
-            }
+                using var providerKey = videoKey.OpenSubKey(provider);
+                if (providerKey == null) continue;
 
-            foreach (var providerKey in videoKey.GetSubKeyNames())
-            {
-                using var providerSubKey = videoKey.OpenSubKey(providerKey);
-                if (providerSubKey == null)
+                foreach (var gpu in providerKey.GetSubKeyNames())
                 {
-                    continue;
-                }
+                    using var gpuKey = providerKey.OpenSubKey(gpu);
+                    if (gpuKey == null) continue;
 
-                foreach (var gpuKey in providerSubKey.GetSubKeyNames())
-                {
-                    using var gpuSubKey = providerSubKey.OpenSubKey(gpuKey);
-                    if (gpuSubKey == null)
+                    // Смотрим, совпадает ли имя видеокарты
+                    var adapterStr = gpuKey.GetValue("HardwareInformation.AdapterString") as string;
+                    var driverDesc = gpuKey.GetValue("DriverDesc") as string;
+
+                    if (!string.Equals(adapterStr, targetGpuName, StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(driverDesc, targetGpuName, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
 
-                    var registryGpuName = gpuSubKey.GetValue("HardwareInformation.AdapterString");
-                    if (registryGpuName as string == gpuName)
+                    // Совпадение найдено. Читаем драйвер
+                    bool isNvidia = targetGpuName.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase);
+                    var rawDriverVer = gpuKey.GetValue(isNvidia ? "DriverVersion" : "RadeonSoftwareVersion") as string;
+                    
+                    var driverVersion = isNvidia ? ParseNvidiaDriverVersion(rawDriverVer) : (rawDriverVer ?? string.Empty);
+
+                    // Читаем объем памяти
+                    double memoryGb = 0;
+                    var memObj = gpuKey.GetValue("HardwareInformation.qwMemorySize") ?? 
+                                 gpuKey.GetValue("HardwareInformation.MemorySize");
+
+                    if (memObj is long memLong and > 0)
+                        memoryGb = memLong / 1024.0 / 1024.0 / 1024.0;
+                    else if (memObj is int memInt and > 0)
+                        memoryGb = memInt / 1024.0 / 1024.0 / 1024.0;
+                    else if (memObj is string memStr && long.TryParse(memStr, out var memStrLong))
+                        memoryGb = memStrLong / 1024.0 / 1024.0 / 1024.0;
+
+                    if (memoryGb > 0 || !string.IsNullOrEmpty(driverVersion))
                     {
-                        var memorySizeValue = gpuSubKey.GetValue("HardwareInformation.qwMemorySize");
-                        if (memorySizeValue != null && memorySizeValue is long memorySizeBytes)
-                        {
-                            if (memorySizeBytes > 0)
-                            {
-                                // Делим на 1024 три раза для перевода в гигабайты
-                                return memorySizeBytes / 1024.0 / 1024.0 / 1024.0;
-                            }
-                        }
+                        return (memoryGb, driverVersion);
                     }
                 }
             }
         }
-        catch 
+        catch
         {
-            //
+            // Игнорируем ошибки прав доступа
         }
 
-        return 0;
+        return (0, string.Empty);
     }
     
-    public static (string, string) GetRegistryGpuDriverInformation(string gpuName, bool isNvidia = false)
+    private static string ParseNvidiaDriverVersion(string? version)
     {
-        try
-        {
-            using var videoKey = Registry.LocalMachine.OpenSubKey(
-                @"SYSTEM\ControlSet001\Control\Video");
-
-            if (videoKey == null)
-            {
-                return ("-GB", "Unknown");
-            }
-
-            foreach (var providerKey in videoKey.GetSubKeyNames())
-            {
-                using var providerSubKey = videoKey.OpenSubKey(providerKey);
-                if (providerSubKey == null)
-                {
-                    continue;
-                }
-
-                foreach (var gpuKey in providerSubKey.GetSubKeyNames())
-                {
-                    using var gpuSubKey = providerSubKey.OpenSubKey(gpuKey);
-                    if (gpuSubKey == null)
-                    {
-                        continue;
-                    }
-
-                    var registryGpuName = gpuSubKey.GetValue(isNvidia 
-                        ? "HardwareInformation.AdapterString" : "DriverDesc");
-                    if (registryGpuName as string == gpuName)
-                    {
-                        var driverVersion = gpuSubKey.GetValue(isNvidia ? "DriverVersion" : "RadeonSoftwareVersion") as string;
-                        var memorySizeValue = gpuSubKey.GetValue("HardwareInformation.qwMemorySize");
-                        if (!string.IsNullOrEmpty(driverVersion))
-                        {
-                            var memorySize = "-GB";
-                            if (memorySizeValue is long memorySizeBytes)
-                            {
-                                if (memorySizeBytes > 0)
-                                {
-                                    // Делим на 1024 три раза для перевода в гигабайты
-                                    memorySize = (memorySizeBytes / 1024.0 / 1024.0 / 1024.0) + "GB";
-                                }
-                            }
-                            else
-                            {
-                                if (int.TryParse(memorySizeValue as string, out var memorySizeFromString))
-                                {
-                                    memorySize = (memorySizeFromString / 1024.0 / 1024.0 / 1024.0) + "GB";
-                                }
-                            }
-
-                            if (isNvidia)
-                            {
-                                driverVersion = ParseNvidiaDriverVersion(driverVersion);
-                            }
-
-                            return (memorySize, driverVersion);
-                        }
-                    }
-                }
-            }
-        }
-        catch 
-        {
-            //
-        }
-
-        return ("-GB", "Unknown");
-    }
-    
-    public static string ParseNvidiaDriverVersion(string version)
-    {
-        if (string.IsNullOrWhiteSpace(version))
-        {
-            return string.Empty;
-        }
+        if (string.IsNullOrWhiteSpace(version)) return string.Empty;
 
         var parts = version.Split('.');
-
-        if (parts.Length != 4)
-        {
-            return string.Empty;
-        }
-
+        if (parts.Length != 4) return string.Empty;
 
         if (!int.TryParse(parts[2], out var c) || !int.TryParse(parts[3], out var dddd))
-        {
             return string.Empty;
-        }
 
         var internalMajor = c * 100 + (dddd / 100);
         var major = internalMajor - 1000;
@@ -396,96 +288,26 @@ public sealed class NvidiaGpuMonitor
     private static double ClampValue(double input)
     {
         var truncated = Math.Truncate(input);
-
-        // Получаем дробную часть числа
         var fractionalPart = input - truncated;
-
-        // Проверяем, близка ли дробная часть к 1 (если дробная часть >= 0.95)
-        // Округляем до следующего целого числа
-        return fractionalPart >= 0.95
-            ? Math.Ceiling(input)
-            :
-            // Исходное значение без изменений
-            input;
+        return fractionalPart >= 0.95 ? Math.Ceiling(input) : input;
     }
 
     private static string DetermineMemoryType(string gpuName)
     {
         var name = gpuName.ToLowerInvariant();
-
-        // RTX 50xx - GDDR7
-        if (name.Contains("rtx 50"))
-        {
-            return "GDDR7";
-        }
-
-        // RTX 40xx - GDDR6X
-        if (name.Contains("rtx 40"))
-        {
-            return "GDDR6X";
-        }
-
-        // RTX 30xx - GDDR6/GDDR6X
-        if (name.Contains("rtx 30"))
-        {
-            if (name.Contains("3090") || name.Contains("3080"))
-            {
-                return "GDDR6X";
-            }
-
-            return "GDDR6";
-        }
-
-        // RTX 20xx, GTX 16xx - GDDR6
-        if (name.Contains("rtx 20") || name.Contains("gtx 16"))
-        {
-            return "GDDR6";
-        }
-
-        // GTX 10xx - GDDR5/GDDR5X
-        if (name.Contains("gtx 10"))
-        {
-            if (name.Contains("1080"))
-            {
-                return "GDDR5X";
-            }
-
-            return "GDDR5";
-        }
-
-        // Default
+        if (name.Contains("rtx 50")) return "GDDR7";
+        if (name.Contains("rtx 40") || name.Contains("3090") || name.Contains("3080")) return "GDDR6X";
+        if (name.Contains("rtx 30") || name.Contains("rtx 20") || name.Contains("gtx 16")) return "GDDR6";
+        if (name.Contains("1080")) return "GDDR5X";
+        if (name.Contains("gtx 10")) return "GDDR5";
         return "Unknown";
     }
 
     private static int EstimateMemoryBusWidth(string gpuName)
     {
         var name = gpuName.ToLowerInvariant();
-
-        // High-end карты (xx90, xx80 Ti) - обычно 384-bit
-        if (name.Contains("90") || name.Contains("80 ti"))
-        {
-            return 384;
-        }
-
-        // Upper mid-range (xx80, xx70 Ti) - обычно 256-bit
-        if (name.Contains("80") || name.Contains("70 ti"))
-        {
-            return 256;
-        }
-
-        // Mid-range (xx70, xx60 Ti) - обычно 192-bit или 256-bit
-        if (name.Contains("70") || name.Contains("60 ti"))
-        {
-            return 256;
-        }
-
-        // Entry-level (xx60 и ниже) - обычно 128-bit или 192-bit
-        if (name.Contains("60") || name.Contains("50"))
-        {
-            return 128;
-        }
-
-        // Default
+        if (name.Contains("90") || name.Contains("80 ti")) return 384;
+        if (name.Contains("80") || name.Contains("70 ti") || name.Contains("70") || name.Contains("60 ti")) return 256;
         return 128;
     }
 }

@@ -3,89 +3,48 @@ using System.Text;
 
 namespace Saku_Overclock.Core.Helpers;
 
-internal static partial class NvApi
+internal static unsafe class NvApi
 {
-    public const int MaxGpuUtilization = 8;
+    private const int MaxGpuUtilization = 8;
     public const int MaxPhysicalGpus = 64;
     public const int MaxThermalSensorsPerGpu = 3;
-    public const int MaxGpuPublicClocks = 32;
+    private const int MaxGpuPublicClocks = 32;
     private const int ShortStringMax = 64;
 
     private const string DllName = "nvapi.dll";
     private const string DllName64 = "nvapi64.dll";
 
-    public static NvApiEnumPhysicalGpUsDelegate? NvApiEnumPhysicalGpUs
-    {
-        get;
-        private set;
-    }
+    public static delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle*, int*, NvStatus> NvApiEnumPhysicalGpUs { get; private set; }
+    public static delegate* unmanaged[Cdecl]<int, NvDisplayHandle*, NvStatus> NvApiEnumNvidiaDisplayHandle { get; private set; }
+    public static delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle, int, NvThermalSettings*, NvStatus> NvApiGpuGetThermalSettings { get; private set; }
+    public static delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle, NvGpuClockFrequencies*, NvStatus> NvApiGpuGetAllClockFrequencies { get; private set; }
+    public static delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle, NvDynamicPStatesInfo*, NvStatus> NvApiGpuGetDynamicPstatesInfoEx { get; private set; }
+    public static delegate* unmanaged[Cdecl]<NvDisplayHandle, NvMemoryInfo*, NvStatus> NvApiGpuGetMemoryInfo { get; private set; }
+    public static delegate* unmanaged[Cdecl]<NvDisplayHandle, NvDisplayDriverVersion*, NvStatus> NvApiGetDisplayDriverVersion { get; private set; }
+    
+    private static delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle, byte*, NvStatus> _nvApiGpuGetFullName;
 
-    public static NvApiEnumNvidiaDisplayHandleDelegate? NvApiEnumNvidiaDisplayHandle
-    {
-        get;
-        private set;
-    }
-
-    public static NvApiGpuGetThermalSettingsDelegate? NvApiGpuGetThermalSettings
-    {
-        get;
-        private set;
-    }
-
-    public static NvApiGpuGetAllClockFrequenciesDelegate? NvApiGpuGetAllClockFrequencies
-    {
-        get;
-        private set;
-    }
-
-    public static NvApiGpuGetDynamicPstatesInfoExDelegate? NvApiGpuGetDynamicPstatesInfoEx
-    {
-        get;
-        private set;
-    }
-
-    public static NvApiGpuGetMemoryInfoDelegate? NvApiGpuGetMemoryInfo
-    {
-        get;
-        private set;
-    }
-
-    public static NvApiGetDisplayDriverVersionDelegate? NvApiGetDisplayDriverVersion
-    {
-        get;
-        private set;
-    }
-
-    private static NvApiGpuGetFullNameDelegate? _nvApiGpuGetFullName;
-
-    public static bool IsAvailable
-    {
-        get;
-        private set;
-    }
+    public static bool IsAvailable { get; private set; }
 
     public static void Initialize()
     {
         try
         {
-            var nvApiInitialize = GetDelegate<NvApiInitializeDelegate>(0x0150E828);
-            if (nvApiInitialize == null)
-            {
-                return;
-            }
+            var initPtr = GetPtr(0x0150E828);
+            if (initPtr == IntPtr.Zero) return;
+
+            var nvApiInitialize = (delegate* unmanaged[Cdecl]<NvStatus>)initPtr;
 
             if (nvApiInitialize() == NvStatus.Ok)
             {
-                NvApiEnumPhysicalGpUs = GetDelegate<NvApiEnumPhysicalGpUsDelegate>(0xE5AC921F);
-                NvApiEnumNvidiaDisplayHandle = GetDelegate<NvApiEnumNvidiaDisplayHandleDelegate>(0x9ABDD40D);
-                NvApiGpuGetThermalSettings = GetDelegate<NvApiGpuGetThermalSettingsDelegate>(0xE3640A56);
-                NvApiGpuGetAllClockFrequencies = GetDelegate<NvApiGpuGetAllClockFrequenciesDelegate>(0xDCB616C3);
-                NvApiGpuGetDynamicPstatesInfoEx = GetDelegate<NvApiGpuGetDynamicPstatesInfoExDelegate>(0x60DED2ED);
-                NvApiGpuGetMemoryInfo = GetDelegate<NvApiGpuGetMemoryInfoDelegate>(0x774AA982);
-                NvApiGetDisplayDriverVersion = GetDelegate<NvApiGetDisplayDriverVersionDelegate>(0xF951A4D1);
-                GetDelegate<NvApiGpuGetBusIdDelegate>(0x1BE0B8E5);
-                GetDelegate<NvApiGpuGetPciIdentifiersDelegate>(0x2DDFB66E);
-                _nvApiGpuGetFullName = GetDelegate<NvApiGpuGetFullNameDelegate>(0xCEEE8E9F);
+                NvApiEnumPhysicalGpUs = (delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle*, int*, NvStatus>)GetPtr(0xE5AC921F);
+                NvApiEnumNvidiaDisplayHandle = (delegate* unmanaged[Cdecl]<int, NvDisplayHandle*, NvStatus>)GetPtr(0x9ABDD40D);
+                NvApiGpuGetThermalSettings = (delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle, int, NvThermalSettings*, NvStatus>)GetPtr(0xE3640A56);
+                NvApiGpuGetAllClockFrequencies = (delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle, NvGpuClockFrequencies*, NvStatus>)GetPtr(0xDCB616C3);
+                NvApiGpuGetDynamicPstatesInfoEx = (delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle, NvDynamicPStatesInfo*, NvStatus>)GetPtr(0x60DED2ED);
+                NvApiGpuGetMemoryInfo = (delegate* unmanaged[Cdecl]<NvDisplayHandle, NvMemoryInfo*, NvStatus>)GetPtr(0x774AA982);
+                NvApiGetDisplayDriverVersion = (delegate* unmanaged[Cdecl]<NvDisplayHandle, NvDisplayDriverVersion*, NvStatus>)GetPtr(0xF951A4D1);
+                _nvApiGpuGetFullName = (delegate* unmanaged[Cdecl]<NvPhysicalGpuHandle, byte*, NvStatus>)GetPtr(0xCEEE8E9F);
 
                 IsAvailable = true;
             }
@@ -102,65 +61,37 @@ internal static partial class NvApi
     [DllImport(DllName64, EntryPoint = "nvapi_QueryInterface", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr NvAPI64_QueryInterface(uint interfaceId);
 
-    private static T? GetDelegate<T>(uint id) where T : Delegate
-    {
-        var ptr = Environment.Is64BitProcess ? NvAPI64_QueryInterface(id) : NvAPI32_QueryInterface(id);
-        
-        if (ptr == IntPtr.Zero) 
-            return null;
-
-        return Marshal.GetDelegateForFunctionPointer<T>(ptr);
-    }
+    private static IntPtr GetPtr(uint id) => 
+        Environment.Is64BitProcess ? NvAPI64_QueryInterface(id) : NvAPI32_QueryInterface(id);
 
     public static NvStatus NvAPI_GPU_GetFullName(NvPhysicalGpuHandle gpuHandle, out string name)
     {
-        StringBuilder builder = new(ShortStringMax);
-        var status = _nvApiGpuGetFullName?.Invoke(gpuHandle, builder) ?? NvStatus.FunctionNotFound;
-        name = builder.ToString();
+        if (_nvApiGpuGetFullName == null)
+        {
+            name = string.Empty;
+            return NvStatus.FunctionNotFound;
+        }
+
+        // Избавляемся от StringBuilder. Память выделяется на стеке, 0 аллокаций в куче.
+        byte* buffer = stackalloc byte[ShortStringMax];
+        var status = _nvApiGpuGetFullName(gpuHandle, buffer);
+        
+        if (status == NvStatus.Ok)
+        {
+            int length = 0;
+            while (length < ShortStringMax && buffer[length] != 0) length++;
+            name = Encoding.ASCII.GetString(buffer, length);
+        }
+        else
+        {
+            name = string.Empty;
+        }
+
         return status;
     }
 
-    internal static int MAKE_NVAPI_VERSION<T>(int ver) => Marshal.SizeOf<T>() | (ver << 16);
-
-    // Delegates
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate NvStatus NvApiInitializeDelegate();
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate NvStatus NvApiGpuGetFullNameDelegate(NvPhysicalGpuHandle gpuHandle, StringBuilder name);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate NvStatus NvApiEnumPhysicalGpUsDelegate([Out] NvPhysicalGpuHandle[] gpuHandles, out int gpuCount);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate NvStatus NvApiEnumNvidiaDisplayHandleDelegate(int thisEnum, ref NvDisplayHandle displayHandle);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate NvStatus NvApiGpuGetThermalSettingsDelegate(NvPhysicalGpuHandle gpuHandle, int sensorIndex,
-        ref NvThermalSettings nvThermalSettings);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate NvStatus NvApiGpuGetAllClockFrequenciesDelegate(NvPhysicalGpuHandle gpuHandle,
-        ref NvGpuClockFrequencies clockFrequencies);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate NvStatus NvApiGpuGetDynamicPstatesInfoExDelegate(NvPhysicalGpuHandle gpuHandle,
-        ref NvDynamicPStatesInfo nvPStates);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate NvStatus
-        NvApiGpuGetMemoryInfoDelegate(NvDisplayHandle displayHandle, ref NvMemoryInfo nvMemoryInfo);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate NvStatus NvApiGetDisplayDriverVersionDelegate(NvDisplayHandle displayHandle,
-        [In] [Out] ref NvDisplayDriverVersion nvDisplayDriverVersion);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate NvStatus NvApiGpuGetBusIdDelegate(NvPhysicalGpuHandle gpuHandle, out uint busId);
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate NvStatus NvApiGpuGetPciIdentifiersDelegate(NvPhysicalGpuHandle gpuHandle, out uint deviceId,
-        out uint subSystemId, out uint revisionId, out uint extDeviceId);
+    // Natively sizeof(T) вместо маршалинга
+    internal static uint MAKE_NVAPI_VERSION<T>(uint ver) where T : unmanaged => (uint)sizeof(T) | (ver << 16);
 
     // Enums
     public enum NvStatus
@@ -168,41 +99,29 @@ internal static partial class NvApi
         Ok = 0,
         FunctionNotFound = -136
     }
-
-    public enum NvThermalTarget
-    {
-        All = 15
-    }
-
-    public enum NvThermalController;
-
-    public enum NvGpuPublicClockId
-    {
-        Graphics = 0,
-        Memory = 4
-    }
+    public enum NvThermalTarget { All = 15 }
+    public enum NvThermalController { None = 0 }
+    public enum NvGpuPublicClockId { Graphics = 0, Memory = 4 }
 
     // Structs
     [StructLayout(LayoutKind.Sequential)]
-    public struct NvPhysicalGpuHandle
-    {
-        private readonly IntPtr ptr;
-    }
+    public readonly struct NvPhysicalGpuHandle { private readonly IntPtr ptr; }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct NvDisplayHandle
-    {
-        private readonly IntPtr ptr;
-    }
+    public readonly struct NvDisplayHandle { private readonly IntPtr ptr; }
 
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct NvThermalSettings
     {
         public uint Version;
         public uint Count;
+        
+        public NvSensor Sensor0, Sensor1, Sensor2;
 
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = MaxThermalSensorsPerGpu)]
-        public NvSensor[] Sensor;
+        public Span<NvSensor> GetSensors()
+        {
+            fixed (NvSensor* p = &Sensor0) return new Span<NvSensor>(p, MaxThermalSensorsPerGpu);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
@@ -221,8 +140,13 @@ internal static partial class NvApi
         public uint Version;
         private readonly uint _reserved;
 
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = MaxGpuPublicClocks)]
-        public NvGpuClockFrequenciesDomain[] Clocks;
+        public fixed ulong ClocksRaw[MaxGpuPublicClocks];
+
+        public Span<NvGpuClockFrequenciesDomain> GetClocks()
+        {
+            fixed (ulong* p = ClocksRaw)
+                return new Span<NvGpuClockFrequenciesDomain>(p, MaxGpuPublicClocks);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
@@ -230,7 +154,6 @@ internal static partial class NvApi
     {
         private readonly uint _isPresent;
         public uint Frequency;
-
         public bool IsPresent => (_isPresent & 1) != 0;
     }
 
@@ -240,8 +163,12 @@ internal static partial class NvApi
         public uint Version;
         public uint Flags;
 
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = MaxGpuUtilization)]
-        public NvDynamicPState[] Utilizations;
+        public NvDynamicPState Util0, Util1, Util2, Util3, Util4, Util5, Util6, Util7;
+
+        public Span<NvDynamicPState> GetUtilizations()
+        {
+            fixed (NvDynamicPState* p = &Util0) return new Span<NvDynamicPState>(p, MaxGpuUtilization);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
@@ -269,10 +196,7 @@ internal static partial class NvApi
         public uint DriverVersion;
         public uint BldChangeListNum;
 
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = ShortStringMax)]
-        public string BuildBranch;
-
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = ShortStringMax)]
-        public string Adapter;
+        public fixed byte BuildBranch[ShortStringMax];
+        public fixed byte Adapter[ShortStringMax];
     }
 }
