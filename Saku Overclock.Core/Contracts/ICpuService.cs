@@ -25,6 +25,7 @@ public interface ICpuService
     uint SmuCoperCommandRsmu { get; set; }
     float[] PowerTable { get; }
     uint PowerTableVersion { get; }
+    uint PowerTableSize { get; }
     float SocMemoryClock { get; }
     float SocFabricClock { get; }
     float SocVoltage { get; }

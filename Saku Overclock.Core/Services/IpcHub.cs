@@ -13,12 +13,30 @@ public sealed class IpcHub(ILogger<IpcHub> logger)
 
     public delegate Task<IpcMessage> CommandHandler(IpcMessage command, CancellationToken ct);
     private readonly ConcurrentDictionary<string, CommandHandler> _handlers = new();
+    
+    public event EventHandler<Guid>? ClientDisconnected;
+
+    public event EventHandler? AllClientsDisconnected;
 
     public void RegisterHandler(string commandName, CommandHandler handler) =>
         _handlers[commandName] = handler;
 
     public void AddClient(Guid id, PipeConnection conn) => _clients[id] = conn;
-    public void RemoveClient(Guid id) => _clients.TryRemove(id, out _);
+
+    public void RemoveClient(Guid id)
+    {
+        if (_clients.TryRemove(id, out _))
+        {
+            // Вызываем событие отключения конкретного клиента
+            ClientDisconnected?.Invoke(this, id);
+
+            // Если это был последний клиент - сообщаем об этом
+            if (_clients.IsEmpty)
+            {
+                AllClientsDisconnected?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
 
     // Пуш события ВСЕМ подключённым клиентам
     public async Task BroadcastEventAsync(string name, string payload, CancellationToken ct = default)

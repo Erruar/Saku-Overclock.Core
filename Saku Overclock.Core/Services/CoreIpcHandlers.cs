@@ -33,6 +33,7 @@ public class CoreIpcHandlers(
                 CpuCodeName = cpu.CpuCodeName,
                 SmuVersion = cpu.SmuVersion,
                 PowerTableVersion = cpu.PowerTableVersion,
+                PowerTableSize = cpu.PowerTableSize,
                 CodenameGeneration = cpu.GetCodenameGeneration(),
                 MemoryConfig = cpu.GetMemoryConfig(),
                 PstateSupported = powerState.IsSupported

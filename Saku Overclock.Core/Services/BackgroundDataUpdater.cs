@@ -15,6 +15,7 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     INotifyIconsService notifyIcons,
     IPresetManagerService presetManager,
     ISharedMemoryWriterService sharedMemoryWriter,
+    IRawSharedMemoryWriterService rawSharedMemoryWriter,
     ILogger<BackgroundDataUpdater> logger) : IBackgroundDataUpdater
 {
     private CancellationTokenSource? _cts;
@@ -131,6 +132,11 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
 
                     sharedMemoryWriter.UpdateSharedMemory(_sensorsInformation);
                     UpdateTrayMonAndRtss(_sensorsInformation);
+
+                    if (rawSharedMemoryWriter.IsRawUpdateActive)
+                    {
+                        rawSharedMemoryWriter.UpdateRawData(dataProvider.GetPowerTable());
+                    }
                 }
                 catch (OperationCanceledException)
                 {

@@ -232,8 +232,39 @@ public class CpuService : ICpuService
 
     public void SetCoperSingleCore(uint coreMask, int margin) => _cpu?.SetPsmMarginSingleCore(coreMask, margin);
     public void RefreshPowerTable() => _cpu?.RefreshPowerTable();
-    public float[] PowerTable => _cpu?.powerTable?.Table ?? [];
-    public uint PowerTableVersion => _cpu?.smu.TableVersion ?? 0;
+    // Мок-версия таблицы (например, версия 0x000A0000)
+    public uint PowerTableVersion => _cpu?.smu?.TableVersion ?? 0x000A0000; 
+
+// Жестко задаем 40 элементов для тестов
+    public uint PowerTableSize => _cpu?.RyzenSmu?.PmTableSize ?? 40; 
+
+    public float[] PowerTable 
+    {
+        get 
+        {
+            // Если мы на AMD и данные есть — отдаем реальные
+            if (_cpu?.powerTable?.Table != null && _cpu.powerTable.Table.Length > 0)
+            {
+                return _cpu.powerTable.Table;
+            }
+
+            // --- MOCK DATA ДЛЯ ТЕСТОВ НА НЕПОДДЕРЖИВАЕМЫХ СИСТЕМАХ ---
+            var mockTable = new float[40];
+            for (int i = 0; i < mockTable.Length; i++)
+            {
+                // Вариант 1: Полный рандом от 0.0 до 100.0 (хорошо видно обновление UI)
+                mockTable[i] = Random.Shared.NextSingle() * 100f;
+            
+                // Вариант 2: Имитация реальных сенсоров (базовое значение + небольшой шум)
+                // Расставь комментарии, если хочешь этот вариант:
+                // float baseValue = (i % 5 == 0) ? 1.2f : 45.0f; // Чередуем вольтаж и температуру
+                // float noise = (Random.Shared.NextSingle() * 0.1f) - 0.05f; // Шум +/- 0.05
+                // mockTable[i] = baseValue + noise;
+            }
+        
+            return mockTable;
+        }
+    }
     public float SocMemoryClock => _cpu?.powerTable?.MCLK ?? 0;
     public float SocFabricClock => _cpu?.powerTable?.FCLK ?? 0;
     public float SocVoltage => _cpu?.powerTable?.VDDCR_SOC ?? 0;
@@ -250,7 +281,7 @@ public class CpuService : ICpuService
             || _cpu?.GetPsmMarginSingleCore(0u) != 0u)
             return true;
 
-        return _cpu?.SetPsmMarginAllCores(0) == true;
+        return _cpu?.SetPsmMarginSingleCore(0,0) == true;
     }
     
     
