@@ -45,7 +45,6 @@ public unsafe class SharedMemoryWriterService : ISharedMemoryWriterService, IDis
 
             if (_mappingHandle == IntPtr.Zero)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
-            // ERROR_ALREADY_EXISTS (183) — не ошибка, значит объект уже был создан ранее
         }
         finally
         {

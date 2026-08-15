@@ -91,7 +91,7 @@ public partial class RtssSettingsService(IFileService fileService, IpcHub hub, I
 
     public bool IsRtssUpdated { get; set; }
     
-    private bool _isRtssAvailable;
+    private bool _isRtssAvailable = true;
 
     public void UpdateRtssMetrics(SensorsInformation sensorsInformation, string? appliedPreset, int? coreCount)
     {

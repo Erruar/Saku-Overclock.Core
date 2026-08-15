@@ -37,17 +37,17 @@ public class NotifyIconsService(IFileService fileService, IpcHub hub) : INotifyI
 
     public void CreateNotifyIcons()
     {
-        throw new NotImplementedException();
+        throw new InvalidOperationException();
     }
 
     public void UpdateNotifyIcons(SensorsInformation sensorsInformation)
     {
-        throw new NotImplementedException();
+        throw new InvalidOperationException();
     }
 
     public void DisposeAllNotifyIcons()
     {
-        throw new NotImplementedException();
+        throw new InvalidOperationException();
     }
 
     public bool IsIconsCreated { get; set; }

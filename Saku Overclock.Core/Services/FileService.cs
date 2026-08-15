@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Data;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -32,7 +33,7 @@ public class FileService (ILogger<FileService> logger) : IFileService
                 return JsonSerializer.Deserialize(json, jsonTypeInfo);
             }
 
-            throw new NotImplementedException();
+            throw new InvalidExpressionException();
         }
 
         return default;
@@ -53,7 +54,7 @@ public class FileService (ILogger<FileService> logger) : IFileService
         }
         else
         {
-            throw new NotImplementedException();
+            throw new InvalidExpressionException();
         }
 
         try

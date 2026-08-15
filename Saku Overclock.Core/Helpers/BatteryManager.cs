@@ -537,7 +537,7 @@ public static partial class BatteryManager
                                 IntPtr.Zero))
                             continue;
 
-                        // TODO: Check + 8
+                        // If something goes unexpected there was pDetailData + 8
                         var devicePath =
                             Marshal.PtrToStringUni(
                                 (IntPtr)(pDetailData + 4));

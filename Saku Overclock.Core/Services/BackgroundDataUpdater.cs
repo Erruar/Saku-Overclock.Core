@@ -19,8 +19,6 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
 {
     private CancellationTokenSource? _cts;
 
-    private bool _isRtssUpdated;
-
     private readonly List<string> _cachedStaticNvidiaGpuInfo =
     [
         "Unknown", "Unknown", "Unknown", "Unknown"
@@ -489,11 +487,11 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
                 rtssSettings.UpdateRtssMetrics(sensorsInformation, applyerService.GetSelectedPresetName(),
                     (int?)cpuService.Cores);
             // Сброс RTSS если был включен, но теперь выключен
-            else if (_isRtssUpdated)
+            else if (rtssSettings.IsRtssUpdated)
                 try
                 {
                     RtssHandler.ResetOsdText();
-                    _isRtssUpdated = false;
+                    rtssSettings.IsRtssUpdated = false;
                 }
                 catch (Exception rtssResetEx)
                 {
@@ -530,10 +528,10 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
     {
         try
         {
-            if (_isRtssUpdated)
+            if (rtssSettings.IsRtssUpdated)
             {
                 RtssHandler.ResetOsdText();
-                _isRtssUpdated = false;
+                rtssSettings.IsRtssUpdated = false;
             }
         }
         catch (Exception ex)
