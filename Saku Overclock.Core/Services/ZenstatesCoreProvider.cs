@@ -204,6 +204,8 @@ public class ZenstatesCoreProvider(
                 0x00540004 or // Raphael 7900
                 0x00540104 or // Raphael 7500, 7800
                 0x00540208 or // Dragon Range
+                0x005D0008 or // Strix Point
+                0x005D0009 or // Strix Point
                 0x00620105 or // Granite Ridge
                 0x00620205 or
                 0x0064020c => true, // Strix Halo
