@@ -9,6 +9,7 @@ public class SensorReader : ISensorReader
     private float[]? _table;
     private readonly ICpuService? _cpu;
     private readonly ILogger<SensorReader> _logger;
+    private uint[] _bristolMemoryFrequency =  new uint[6];
 
     public int CurrentTableVersion
     {
@@ -95,9 +96,13 @@ public class SensorReader : ISensorReader
                 return (false, 0);
             }
 
+            var isBristol = _cpu.GetCodenameGeneration() == CodenameGeneration.Fp4;
+            if (isBristol && _bristolMemoryFrequency[0] == 0)
+                _cpu.GetMemoryFrequencyBristol(ref _bristolMemoryFrequency);
+
             return type switch
             {
-                SpecialValueType.Mclk => (true, _cpu.SocMemoryClock),
+                SpecialValueType.Mclk => (true, isBristol? _bristolMemoryFrequency[0] / 100f : _cpu.SocMemoryClock),
                 SpecialValueType.Fclk => (true, _cpu.SocFabricClock),
                 SpecialValueType.VddcrSoc => (true, _cpu.SocVoltage),
                 _ => (false, 0)
@@ -197,6 +202,11 @@ public class SensorReader : ISensorReader
             return;
         
         var codenameGen = _cpu.GetCodenameGeneration();
+
+        if (codenameGen == CodenameGeneration.Fp4)
+        {
+            tableVersion |= 0x130000;
+        }
 
         // Zen fallback
         if (tableVersion == 0 && codenameGen == CodenameGeneration.Am4V1)
