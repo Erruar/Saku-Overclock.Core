@@ -13,7 +13,7 @@ public partial class RtssSettingsService(IFileService fileService, IpcHub hub, I
     private const string FolderPath = "Saku Overclock/Settings";
     private const string FileName = "RtssSettings.json";
     private readonly string _folder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), FolderPath);
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), FolderPath);
 
     private RtssSettings _settings = new();
     private readonly Lock _lock = new();
