@@ -15,7 +15,7 @@ public class PresetManagerService(IFileService fileService,
 {
     private const string FolderPath = "Saku Overclock/Presets";
     private const string FileName = "UserPresets.json";
-    private static readonly string LocalAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    private static readonly string LocalAppData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
     private readonly string _applicationDataFolder = Path.Combine(LocalAppData, FolderPath);
     private readonly Lock _lock = new();
 
