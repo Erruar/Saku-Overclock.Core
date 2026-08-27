@@ -394,8 +394,8 @@ public class OcFinderService : IOcFinderService
             DesktopCurves = basePreset.DesktopCurves,
             EfficiencyMultiplier = 0.9,
             ThermalMultiplier = 0.95,
-            StapmBonus = 2.0, // Завышаем мощность для старой архитектуры
-            FastBonus = 1.0
+            StapmBonus = 1.0,
+            FastBonus = 1.5 // Завышаем мощность для старой архитектуры
         };
 
         // Zen пресет
@@ -581,6 +581,12 @@ public class OcFinderService : IOcFinderService
                 VrmSocEdcCurrentLimit =  new PresetOption<double>(true, 60),
             }
         };
+        if (_codenameGeneration is CodenameGeneration.Fp4 or CodenameGeneration.Fp5
+            or CodenameGeneration.Am4V1 or CodenameGeneration.Am4V2 or CodenameGeneration.Am5)
+            settings.CpuSettings.LaptopPowerLimit.IsEnabled = false; // STT limits were not implemented on those platforms
+        if (_codenameGeneration is CodenameGeneration.Am5)
+            settings.VrmSettings.VrmSocEdcCurrentLimit.IsEnabled = false; // No way to control Soc current
+        
         return new PresetConfiguration
         {
             Type = type,
