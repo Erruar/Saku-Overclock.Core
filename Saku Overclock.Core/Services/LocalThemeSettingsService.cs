@@ -9,7 +9,7 @@ public class LocalThemeSettingsService(IFileService fileService, IpcHub hub) : I
     private const string FolderPath = "Saku Overclock/Settings/Themes";
     private const string FileName = "ThemeSettings.json";
     private readonly string _folder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), FolderPath);
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), FolderPath);
 
     private LocalThemeSettingsOptions _settings = new()
     {
