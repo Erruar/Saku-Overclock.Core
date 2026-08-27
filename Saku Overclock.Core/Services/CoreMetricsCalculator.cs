@@ -37,6 +37,7 @@ public class CoreMetricsCalculator
         Environment.OSVersion.Version >= new Version(10, 0, 22621, 0) &&
         Environment.OSVersion.Version < new Version(10, 0, 26100, 0);
 
+    private readonly bool _isBristolFamily;
     private readonly bool _isRavenFamily;
     private readonly bool _isHawkPointFamily;
 
@@ -46,8 +47,8 @@ public class CoreMetricsCalculator
         _indexResolver = indexResolver;
 
         var codenameGen = cpu.GetCodenameGeneration();
+        if (codenameGen == CodenameGeneration.Fp4) _isBristolFamily = true;
         if (codenameGen == CodenameGeneration.Fp5) _isRavenFamily = true;
-
         if (codenameGen == CodenameGeneration.Fp7) _isHawkPointFamily = true;
     }
 
@@ -57,10 +58,37 @@ public class CoreMetricsCalculator
     public void Initialize(int coreCount)
     {
         _coreCount = coreCount;
-        _clkPerCoreCache = new double[_isRavenFamily && _coreCount == 2 ? 4 : _coreCount];
-        _voltPerCoreCache = new double[coreCount];
-        _tempPerCoreCache = new double[coreCount];
-        _powerPerCoreCache = new double[coreCount];
+
+        // На Bristol процессорах ядра формируют рабочие группы (CU)
+        // по два ядра в каждом, таблица сенсоров содержит значения
+        // не для каждого ядра, а для каждого CU
+        if (_isBristolFamily)
+        {
+            if (_coreCount > 2)
+            {
+                // Использовать конфигурацию CU1
+                _clkPerCoreCache = new double[2];
+                _voltPerCoreCache = new double[1]; // Сенсор напряжения один
+                _tempPerCoreCache = new double[2];
+                _powerPerCoreCache = new double[2];
+            }
+            else
+            {
+                // Использовать конфигурацию CU0
+                _clkPerCoreCache = new double[1];
+                _voltPerCoreCache = new double[1];
+                _tempPerCoreCache = new double[1];
+                _powerPerCoreCache = new double[1];
+            }
+        }
+        else
+        {
+            _clkPerCoreCache = new double[_isRavenFamily && _coreCount == 2 ? 4 : _coreCount];
+            _voltPerCoreCache = new double[coreCount];
+            _tempPerCoreCache = new double[coreCount];
+            _powerPerCoreCache = new double[coreCount];
+        }
+        
     }
 
     /// <summary>
@@ -86,7 +114,11 @@ public class CoreMetricsCalculator
             // Частота - может быть больше массива для Raven
             if (core < _clkPerCoreCache.Length)
             {
-                var clk = GetCoreMetric(startFreqIndex, core, 0.2, 8.0);
+                var clk = GetCoreMetric(startFreqIndex, core, 0.2, _isBristolFamily ? 8000 : 8.0);
+                if (_isBristolFamily)
+                {
+                    clk /= 1000;
+                }
                 if (clk > 0)
                 {
                     _clkPerCoreCache[core] = Math.Round(clk, 3);
@@ -228,7 +260,12 @@ public class CoreMetricsCalculator
         // структуры кристалла (CCD/CCX) и архитектурных исключений.
 
         var coresCount = _coreCount;
-
+        
+        // Специальный фикс для Bristol: при старте со смещения 33 (или 36) читаем напряжение процессора.
+        // Берём напряжение только из просчитанного значения SVI2, так как индексов по ядрам в этой версии
+        // прошивки Smu просто не существует
+        if (_isBristolFamily && startIndex is 33 or 36) return 1;
+        
         // Специальный фикс для Hawk Point: при старте со смещения 105 читаем напряжение процессора.
         // Берём напряжение только из SVI2, так как индексы по ядрам возвращают некорректные значения
         // (баг в прошивке Smu)
