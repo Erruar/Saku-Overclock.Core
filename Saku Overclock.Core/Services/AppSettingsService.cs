@@ -12,7 +12,7 @@ public class AppSettingsService(IFileService fileService, IpcHub hub) : IAppSett
     private const string FolderPath = "Saku Overclock/Settings";
     private const string FileName = "AppSettings.json";
     private readonly string _folder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), FolderPath);
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), FolderPath);
 
     private AppSettings _settings = new();
     private readonly Lock _lock = new();
@@ -139,7 +139,7 @@ public class AppSettingsService(IFileService fileService, IpcHub hub) : IAppSett
 
     private AppSettings Snapshot()
     {
-        lock (_lock) return _settings; // AppSettings — DTO, копию можно не делать, если её никто не мутирует напрямую
+        lock (_lock) return _settings; 
     }
 
     private async Task ApplyAndSaveAsync(AppSettings updated, CancellationToken ct)
