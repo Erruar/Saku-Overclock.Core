@@ -32,6 +32,8 @@ public class CpuService : ICpuService
             _codeName = _cpu.info.codeName;
 
             IsAvailable = true;
+            logger.LogInformation("Cpu service initialized.");
+            logger.LogError("CRITICAL: Last Error was {Exception}", _cpu.LastError);
         }
         catch (Exception e)
         {
@@ -42,27 +44,32 @@ public class CpuService : ICpuService
 
     public bool? IsPlatformPc()
     {
+        if (_cpu == null) return null;
+        // TODO: wait for new ZenStates Core, create pull with advanced Bristol CPUs support
+        if (_codeName is /*CodeName.Carrizo 
+            or*/ CodeName.BristolRidge /*or CodeName.StoneyRidge */
+            or CodeName.RavenRidge or CodeName.Picasso 
+            or CodeName.Renoir or CodeName.Cezanne 
+            or CodeName.Phoenix or CodeName.Phoenix2)
+        {
+            if (_cpu.info.cpuName.Contains('G') ||
+                _cpu.info.cpuName.Contains("GE") ||
+                (_cpu.info.cpuName.Contains('X') && !_cpu.info.cpuName.Contains("HX")) ||
+                _cpu.info.cpuName.Contains('F') ||
+                (_cpu.info.cpuName.Contains("X3D") && !_cpu.info.cpuName.Contains("HX3D")) ||
+                _cpu.info.cpuName.Contains("XT")
+               )
+            {
+                return true;
+            }
+            return false;        
+        }
+
         if (IsPlatformPcByCodename() == true)
         {
-            if (_codeName is CodeName.RavenRidge or CodeName.Picasso or CodeName.Renoir or CodeName.Cezanne or CodeName.Phoenix or CodeName.Phoenix2)
-            {
-                if (_cpu?.info.packageType == PackageType.FPX)
-                {
-                    if (_cpu.info.cpuName.Contains('G') ||
-                            _cpu.info.cpuName.Contains("GE") ||
-                            (_cpu.info.cpuName.Contains('X') && !_cpu.info.cpuName.Contains("HX")) ||
-                            _cpu.info.cpuName.Contains('F') ||
-                            (_cpu.info.cpuName.Contains("X3D") && !_cpu.info.cpuName.Contains("HX3D")) ||
-                            _cpu.info.cpuName.Contains("XT")
-                    )
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-            }
             return true;
         }
+
         return null;
     }
 
@@ -70,7 +77,9 @@ public class CpuService : ICpuService
     {
         return _codeName switch
         {
-            CodeName.BristolRidge or CodeName.SummitRidge or CodeName.PinnacleRidge => true,
+            // TODO: wait for new ZenStates Core, create pull with advanced Bristol CPUs support
+            CodeName.BristolRidge /*or CodeName.Carrizo or CodeName.StoneyRidge*/ => true,
+            CodeName.SummitRidge or CodeName.PinnacleRidge => true,
             CodeName.RavenRidge or CodeName.Picasso or CodeName.Dali or CodeName.FireFlight => false,
             CodeName.Matisse or CodeName.Vermeer => true,
             CodeName.Renoir or CodeName.Lucienne or CodeName.Cezanne => false,
@@ -100,7 +109,10 @@ public class CpuService : ICpuService
     {
         switch (_codeName)
         {
-            case CodeName.BristolRidge: return CodenameGeneration.Fp4;
+            // TODO: wait for new ZenStates Core, create pull with advanced Bristol CPUs support
+            //case CodeName.Carrizo:
+            case CodeName.BristolRidge:
+            /*case CodeName.StoneyRidge:*/ return CodenameGeneration.Fp4;
             case CodeName.SummitRidge:
             case CodeName.PinnacleRidge: return CodenameGeneration.Am4V1;
             case CodeName.RavenRidge:
@@ -134,9 +146,9 @@ public class CpuService : ICpuService
 
     public bool IsRaven => _codeName == CodeName.RavenRidge;
     public bool IsDragonRange => _codeName == CodeName.DragonRange;
-    public uint PhysicalCores => _cpu?.info.topology.physicalCores ?? (uint)Environment.ProcessorCount;
+    public uint PhysicalCores => GetCodenameGeneration() == CodenameGeneration.Fp4 ? (uint)Environment.ProcessorCount : _cpu?.info.topology.physicalCores  ?? (uint)Environment.ProcessorCount;
     public uint[] CoreDisableMap => _cpu?.info.topology.coreDisableMap ?? [];
-    public uint Cores => _cpu?.info.topology.cores ?? (uint)Environment.ProcessorCount;
+    public uint Cores => GetCodenameGeneration() == CodenameGeneration.Fp4 ? (uint)Environment.ProcessorCount : _cpu?.info.topology.cores ?? (uint)Environment.ProcessorCount;
 
     public SmuAddressSet Rsmu => new(_cpu?.smu.Rsmu?.SMU_ADDR_MSG ?? 0, _cpu?.smu.Rsmu?.SMU_ADDR_RSP ?? 0, _cpu?.smu.Rsmu?.SMU_ADDR_ARG ?? 0);
     public SmuAddressSet Mp1 => new(_cpu?.smu.Mp1Smu?.SMU_ADDR_MSG ?? 0, _cpu?.smu.Mp1Smu?.SMU_ADDR_RSP ?? 0, _cpu?.smu.Mp1Smu?.SMU_ADDR_ARG ?? 0);
@@ -147,7 +159,7 @@ public class CpuService : ICpuService
     public bool WriteMsr(uint msr, uint eax, uint edx) => _cpu?.WriteMsr(msr, eax, edx) ?? false;
 
     public string CpuName => ReadCpuInformation().name;
-    public bool Smt => _cpu?.systemInfo.SMT ?? true;
+    public bool Smt => _cpu?.systemInfo?.SMT ?? true;
 
     private static (string name, string baseClock) ReadCpuInformation()
     {
@@ -160,10 +172,12 @@ public class CpuService : ICpuService
 
     public CommonMotherBoardInfo MotherBoardInfo => new() 
     { 
-        MotherBoardName = _cpu?.systemInfo.MbName, 
-        MotherBoardVendor = _cpu?.systemInfo.MbVendor, 
-        BiosVersion = _cpu?.systemInfo.BiosVersion 
+        MotherBoardName = _cpu?.systemInfo?.MbName, 
+        MotherBoardVendor = _cpu?.systemInfo?.MbVendor, 
+        BiosVersion = _cpu?.systemInfo?.BiosVersion 
     };
+
+    private static int ConfiguredMemorySpeed => SystemInfo.SMBios.MemoryDevices?.FirstOrDefault()?.ConfiguredSpeed ?? 0;
 
     public MemoryConfig GetMemoryConfig()
     {
@@ -182,18 +196,25 @@ public class CpuService : ICpuService
                 });
             }
 
-            var umcBase = _cpu.ReadDword(0x50200);
-            var umcOffset1 = _cpu.ReadDword(0x50204);
-            var umcOffset2 = _cpu.ReadDword(0x50208);
+            var umcBase = 0u;
+            var umcOffset1 = 0u;
+            var umcOffset2 = 0u;
+            if (GetCodenameGeneration() != CodenameGeneration.Fp4)
+            {
+                umcBase = _cpu.ReadDword(0x50200);
+                umcOffset1 = _cpu.ReadDword(0x50204);
+                umcOffset2 = _cpu.ReadDword(0x50208);
+            }
 
             var freqFromRatio = ((MemType)memoryConfig.Type == MemType.Ddr4 ? (umcBase & 0x7F) / 3 : (umcBase & 0xFFFF) / 100) * 200;
-
+            var memorySpeed = (int)_cpu.powerTable.MCLK * 2;
+            if (memorySpeed == 0) memorySpeed = ConfiguredMemorySpeed;
             return new MemoryConfig
             {
                 Type = (MemType)memoryConfig.Type,
                 TotalCapacity = (int)(memoryConfig.TotalCapacity.SizeInBytes / 1073741824),
                 Modules = convertedModules,
-                MemorySpeed = (int)_cpu.powerTable.MCLK * 2,
+                MemorySpeed = memorySpeed,
                 FrequencyFromTimings = (int)freqFromRatio,
                 MemoryTimings = new MemoryTimings
                 {
@@ -212,9 +233,16 @@ public class CpuService : ICpuService
         }
     }
 
+    public void GetMemoryFrequencyBristol(ref uint[] frequency)
+    {
+        // TODO: wait for new ZenStates Core, create pull with advanced Bristol CPUs support
+        //if (_cpu is { smu: not null } && _cpu.smu.GpuMb.SMU_MSG_GetMemoryFrequency > 0) 
+        //    _cpu.smu.SendGpuMbCommand(_cpu.smu.GpuMb.SMU_MSG_GetMemoryFrequency, ref frequency);
+    }
+
     public bool Avx512AvailableByCodename => _codeName >= CodeName.Raphael;
     public string CpuCodeName => _codeName.ToString();
-    public string SmuVersion => _cpu?.systemInfo.SmuVersionString ?? "0.0.0";
+    public string SmuVersion => _cpu?.systemInfo?.SmuVersionString ?? "0.0.0";
 
     public uint MakeCoreMask(uint core = 0u, uint ccd = 0u, uint ccx = 0u) => _cpu?.MakeCoreMask(core, ccd, ccx) ?? 0;
 
@@ -234,7 +262,7 @@ public class CpuService : ICpuService
     public void RefreshPowerTable() => _cpu?.RefreshPowerTable();
     public float[] PowerTable => _cpu?.powerTable?.Table ?? [];
     public uint PowerTableVersion => _cpu?.smu?.TableVersion ?? 0; 
-    public uint PowerTableSize => _cpu?.RyzenSmu?.PmTableSize ?? 0; 
+    public uint PowerTableSize => _cpu?.RyzenSmu?.PmTableSize / 4 ?? 0; 
     public float SocMemoryClock => _cpu?.powerTable?.MCLK ?? 0;
     public float SocFabricClock => _cpu?.powerTable?.FCLK ?? 0;
     public float SocVoltage => _cpu?.powerTable?.VDDCR_SOC ?? 0;
@@ -247,7 +275,7 @@ public class CpuService : ICpuService
     /// </summary>
     public bool ReturnUndervoltingAvailability()
     {
-        if (GetCodenameGeneration() is CodenameGeneration.Fp5 or CodenameGeneration.Am4V1 or CodenameGeneration.Am5
+        if (GetCodenameGeneration() is CodenameGeneration.Fp4 or CodenameGeneration.Fp5 or CodenameGeneration.Am4V1 or CodenameGeneration.Am5
             || _cpu?.GetPsmMarginSingleCore(0u) != 0u)
             return true;
 
