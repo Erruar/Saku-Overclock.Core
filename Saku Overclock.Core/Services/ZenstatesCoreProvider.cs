@@ -89,7 +89,7 @@ public class ZenstatesCoreProvider(
 
         var (socVoltSuccess, socVolt) = sensorReader.ReadSpecialValue(SensorReader.SpecialValueType.VddcrSoc);
         sensorsInformation.SocPower = GetSensorValue(SensorId.SocPower, socVoltSuccess ? (float)(socVolt * 10) : 0f);
-        sensorsInformation.SocVoltage = socVoltSuccess ? socVolt : 0;
+        sensorsInformation.SocVoltage = GetSensorValue(SensorId.SocVoltage, (float)(socVoltSuccess ? socVolt : 0));
 
         // Частота и напряжение процессора
         sensorsInformation.CpuFrequency = avgCoreClk;
@@ -100,8 +100,11 @@ public class ZenstatesCoreProvider(
         sensorsInformation.CpuPowerPerCore = powerPerCore;
 
         // Дополнительные параметры (не на всех процессорах)
+        // Some Stoney and Bristol CPUs dont have dedicated voltage rail (only 2-way VRM PMIC)
+        // iGPU is using SoC voltage rail use SoC sensors for power and voltage
+        var isBristolTable = tableVersion is 0x00130002 or 0x00130004 or 0x001300C8;
         sensorsInformation.ApuSlowLimit = GetSensorValue(SensorId.ApuSlowLimit);
-        sensorsInformation.ApuSlowValue = GetSensorValue(SensorId.ApuSlowValue);
+        sensorsInformation.ApuSlowValue = GetSensorValue(SensorId.ApuSlowValue, isBristolTable ? (float)sensorsInformation.SocPower : 0);
         sensorsInformation.VrmPsiValue = GetSensorValue(SensorId.VrmPsiValue);
         sensorsInformation.VrmPsiSocValue = GetSensorValue(SensorId.VrmPsiSocValue);
         sensorsInformation.SocTdcValue = GetSensorValue(SensorId.SocTdcValue);
@@ -115,7 +118,7 @@ public class ZenstatesCoreProvider(
         sensorsInformation.CpuStapmTimeValue = GetSensorValue(SensorId.CpuStapmTimeValue);
         sensorsInformation.CpuSlowTimeValue = GetSensorValue(SensorId.CpuSlowTimeValue);
         sensorsInformation.ApuFrequency = GetSensorValue(SensorId.ApuFrequency);
-        sensorsInformation.ApuVoltage = GetSensorValue(SensorId.ApuVoltage);
+        sensorsInformation.ApuVoltage = GetSensorValue(SensorId.ApuVoltage, isBristolTable ? (float)sensorsInformation.SocVoltage : 0);
     }
 
     /// <summary>
@@ -162,7 +165,10 @@ public class ZenstatesCoreProvider(
     {
         return tableVersion switch
         {
-            0x001E0001 or // Raven, Dali, Picasso
+                0x00130002 or
+                0x00130004 or
+                0x001300C8 or
+                0x001E0001 or // Raven, Dali, Picasso
                 0x001E0002 or
                 0x001E0003 or
                 0x001E0004 or
