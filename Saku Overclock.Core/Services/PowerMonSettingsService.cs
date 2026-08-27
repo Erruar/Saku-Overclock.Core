@@ -8,7 +8,7 @@ public class PowerMonSettingsService(IFileService fileService, IpcHub hub) : IPo
     private const string FolderPath = "Saku Overclock/Settings";
     private const string FileName = "PowerMon.json";
     private readonly string _folder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), FolderPath);
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), FolderPath);
 
     private List<string> _notelist = [];
     private readonly Lock _lock = new();
