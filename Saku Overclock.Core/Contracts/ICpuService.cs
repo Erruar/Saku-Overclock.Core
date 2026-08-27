@@ -37,6 +37,7 @@ public interface ICpuService
     bool ReadMsr(uint index, ref uint eax, ref uint edx);
     bool WriteMsr(uint msr, uint eax, uint edx);
     MemoryConfig GetMemoryConfig();
+    void GetMemoryFrequencyBristol(ref uint[] frequency);
     uint MakeCoreMask(uint core = 0u, uint ccd = 0u, uint ccx = 0u);
     void SetCoperSingleCore(uint coreMask, int margin);
     void RefreshPowerTable();
