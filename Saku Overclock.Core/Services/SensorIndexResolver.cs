@@ -80,6 +80,11 @@ public class SensorIndexResolver : ISensorIndexResolver
 
         return ver switch
         {
+            // Bristol → индекс 174
+            0x00130002 or
+            0x00130004 => 166,
+            0x001300C8 => 174,
+            
             0x00540004 or    // Zen 4
             0x00540104 or    // Zen 4
             0x00540208 or
@@ -98,6 +103,11 @@ public class SensorIndexResolver : ISensorIndexResolver
 
         return ver switch
         {
+            // Bristol → индекс 134
+            0x00130002 or
+            0x00130004 => 131,
+            0x001300C8 => 134,
+            
             0x00540004 or     // Zen 4
             0x00540104 or     // Zen 4
             0x00540208 or
@@ -116,6 +126,11 @@ public class SensorIndexResolver : ISensorIndexResolver
 
         return ver switch
         {
+            // Bristol → индекс 167
+            0x00130002 => 166,
+            0x00130004 => 162,
+            0x001300C8 => 167,
+            
             0x00190001 or    // Zen
             0x00240803 or    // Zen 2
             0x00240903 or
@@ -141,6 +156,11 @@ public class SensorIndexResolver : ISensorIndexResolver
 
         return ver switch
         {
+            // Bristol → индекс 22
+            0x00130002 or
+            0x00130004 => 135,
+            0x001300C8 => 138,
+            
             0x00190001 => 22, // Zen
             0x00240803 or     // Zen 2
             0x00240903 or
@@ -166,6 +186,11 @@ public class SensorIndexResolver : ISensorIndexResolver
 
         return ver switch
         {
+            // Bristol → индекс 133
+            0x00130002 or
+            0x00130004 => 130,
+            0x001300C8 => 133,
+            
             0x00190001 or    // Zen
             0x00240803 or    // Zen 2
             0x00240903 or
@@ -191,6 +216,11 @@ public class SensorIndexResolver : ISensorIndexResolver
 
         return ver switch
         {
+            // Bristol → индекс 23
+            0x00130002 or
+            0x00130004 or
+            0x001300C8 => 21,
+            
             0x00190001 or    // Zen
             0x00240803 or    // Zen 2
             0x00240903 or
@@ -212,6 +242,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 133
+            0x00130002 or
+            0x00130004 => 130,
+            0x001300C8 => 133,
+            
             // Raven and up → индекс 0
             0x001E0001 or
             0x001E0002 or
@@ -261,6 +296,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 16
+            0x00130002 or
+            0x00130004 or
+            0x001300C8 => 16,
+            
             // Raven and up → индекс 153
             0x001E0001 or
             0x001E0002 or
@@ -314,6 +354,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 30
+            0x00130002 or
+            0x00130004 => 27,
+            0x001300C8 => 30,
+            
             // Zen поколение
             0x00190001 or    // Zen
             0x00240803 or    // Zen 2
@@ -374,6 +419,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 31
+            0x00130002 or
+            0x00130004 => 28,
+            0x001300C8 => 31,
+            
             // Zen поколение
             0x00190001 or     // Zen
             0x00240803 or     // Zen 2
@@ -434,6 +484,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 39
+            0x00130002 or
+            0x00130004 => 36,
+            0x001300C8 => 39,
+            
             // Zen поколение
             0x00190001 => 2, // Zen
             0x00240803 or    // Zen 2
@@ -491,6 +546,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 31
+            0x00130002 or
+            0x00130004 => 28,
+            0x001300C8 => 31,
+            
             // Zen поколение
             0x00190001 => 25, // Zen
             0x00240803 or     // Zen 2
@@ -655,6 +715,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 34
+            0x00130002 or
+            0x00130004 => 31,
+            0x001300C8 => 34,
+            
             // Zen поколение
             0x00190001 => 2, // Zen
             0x00240803 or    // Zen 2
@@ -713,6 +778,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 35
+            0x00130002 or
+            0x00130004 => 32,
+            0x001300C8 => 35,
+            
             // Zen поколение
             0x00190001 => 27, // Zen
             0x00240803 or     // Zen 2
@@ -773,6 +843,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 41
+            0x00130002 or
+            0x00130004 => 38,
+            0x001300C8 => 41,
+            
             // Zen поколение
             0x00190001 => 2, // Zen
             0x00240803 or    // Zen 2
@@ -831,6 +906,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 35
+            0x00130002 or
+            0x00130004 => 32,
+            0x001300C8 => 35,
+            
             // Zen поколение
             0x00190001 => 28, // Zen
             0x00240803 or     // Zen 2
@@ -893,6 +973,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 6
+            0x00130002 or
+            0x00130004 or
+            0x001300C8 => 6,
+            
             // Zen поколение
             0x00190001 or    // Zen
             0x00240803 or    // Zen 2
@@ -952,6 +1037,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 7
+            0x00130002 or
+            0x00130004 or
+            0x001300C8 => 7,
+            
             // Zen поколение
             0x00190001 or    // Zen
             0x00240803 or    // Zen 2
@@ -1011,6 +1101,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 12
+            0x00130002 or
+            0x00130004 or
+            0x001300C8 => 12,
+            
             // Raven and up → индекс 30
             0x001E0001 or
             0x001E0002 or
@@ -1060,6 +1155,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 13
+            0x00130002 or
+            0x00130004 or
+            0x001300C8 => 13,
+            
             // Raven and up → индекс 151
             0x001E0001 or
             0x001E0002 or
@@ -1189,6 +1289,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 175
+            0x00130002 or
+            0x00130004 => 167,
+            0x001300C8 => 175,
+            
             // Raven and up → индекс 345, 343, 376
             0x001E0001 or
             0x001E0002 => 345,
@@ -1238,6 +1343,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 160
+            0x00130002 or
+            0x00130004 => 157,
+            0x001300C8 => 160,
+            
             // Raven and up → индекс 346, 344, 377
             0x001E0001 or
             0x001E0002 => 346,
@@ -1291,6 +1401,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 90
+            0x00130002 => 92,
+            0x00130004 => 87,
+            0x001300C8 => 90,
+            
             // Raven and up → индекс 155
             0x001E0001 or
             0x001E0002 or
@@ -1341,6 +1456,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 38
+            0x00130002 or
+            0x00130004 => 34,
+            0x001300C8 => 37,
+            
             // Raven and up → индекс 150
             0x001E0001 or
             0x001E0002 or
@@ -1396,6 +1516,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 17
+            0x00130002 or
+            0x00130004 or
+            0x001300C8 => 17,
+            
             // Zen поколение
             0x00190001 => 19, // Zen
             0x00240803 or     // Zen 2
@@ -1458,6 +1583,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 38
+            0x00130002 or
+            0x00130004 => 35,
+            0x001300C8 => 38,
+            
             // Zen поколение
             0x00190001 => 26, // Zen
             0x00240803 or     // Zen 2
@@ -1524,6 +1654,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 120
+            0x00130002 => 123,
+            0x00130004 => 117,
+            0x001300C8 => 120,
+            
             // Zen поколение
             0x00190001 => 81,  // Zen
             0x00240803 => 227, // Zen 2
@@ -1583,6 +1718,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 36
+            0x00130002 or
+            0x00130004 => 33, // Use only one
+            0x001300C8 => 36, // Use only one
+            
             // Zen поколение
             0x00190001 => 57,  // Zen
             0x00240803 => 163, // Zen 2
@@ -1642,6 +1782,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 2
+            0x00130002 or
+            0x00130004 or 
+            0x001300C8 => 2,
+            
             // Zen поколение
             0x00190001 => 65,  // Zen
             0x00240803 => 179, // Zen 2
@@ -1701,6 +1846,11 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
+            // Bristol → индекс 14
+            0x00130002 or
+            0x00130004 or 
+            0x001300C8 => 14,
+            
             // Zen поколение
             0x00190001 => 41,  // Zen
             0x00240803 or      // Zen 2
