@@ -9,7 +9,7 @@ public class NotifyIconsService(IFileService fileService, IpcHub hub) : INotifyI
     private const string FolderPath = "Saku Overclock/Settings";
     private const string FileName = "NotifyIcons.json";
     private readonly string _folder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), FolderPath);
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), FolderPath);
 
     private List<NiIconsElements> _elements = [];
     private readonly Lock _lock = new();
