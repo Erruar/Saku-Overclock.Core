@@ -4,6 +4,9 @@ using ZenStates.Core;
 using Saku_Overclock.Shared;
 using Saku_Overclock.Core.Contracts;
 using Saku_Overclock.Shared.Models;
+using ZenStates.Core.Hardware;
+using ZenStates.Core.Hardware.Smu;
+using ZenStates.Core.PawnIo;
 using static ZenStates.Core.Cpu;
 
 namespace Saku_Overclock.Core.Services;
@@ -242,7 +245,7 @@ public class CpuService : ICpuService
 
     public bool Avx512AvailableByCodename => _codeName >= CodeName.Raphael;
     public string CpuCodeName => _codeName.ToString();
-    public string SmuVersion => _cpu?.systemInfo?.SmuVersionString ?? "0.0.0";
+    public string SmuVersion => _cpu?.systemInfo?.SmuVersion.ToString() ?? "0.0.0";
 
     public uint MakeCoreMask(uint core = 0u, uint ccd = 0u, uint ccx = 0u) => _cpu?.MakeCoreMask(core, ccd, ccx) ?? 0;
 
