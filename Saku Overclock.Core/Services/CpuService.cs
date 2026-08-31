@@ -48,9 +48,8 @@ public class CpuService : ICpuService
     public bool? IsPlatformPc()
     {
         if (_cpu == null) return null;
-        // TODO: wait for new ZenStates Core, create pull with advanced Bristol CPUs support
-        if (_codeName is /*CodeName.Carrizo 
-            or*/ CodeName.BristolRidge /*or CodeName.StoneyRidge */
+        if (_codeName is CodeName.Carrizo 
+            or CodeName.BristolRidge or CodeName.StoneyRidge
             or CodeName.RavenRidge or CodeName.Picasso 
             or CodeName.Renoir or CodeName.Cezanne 
             or CodeName.Phoenix or CodeName.Phoenix2)
@@ -80,8 +79,7 @@ public class CpuService : ICpuService
     {
         return _codeName switch
         {
-            // TODO: wait for new ZenStates Core, create pull with advanced Bristol CPUs support
-            CodeName.BristolRidge /*or CodeName.Carrizo or CodeName.StoneyRidge*/ => true,
+            CodeName.BristolRidge or CodeName.Carrizo or CodeName.StoneyRidge => true,
             CodeName.SummitRidge or CodeName.PinnacleRidge => true,
             CodeName.RavenRidge or CodeName.Picasso or CodeName.Dali or CodeName.FireFlight => false,
             CodeName.Matisse or CodeName.Vermeer => true,
@@ -112,10 +110,9 @@ public class CpuService : ICpuService
     {
         switch (_codeName)
         {
-            // TODO: wait for new ZenStates Core, create pull with advanced Bristol CPUs support
-            //case CodeName.Carrizo:
+            case CodeName.Carrizo:
             case CodeName.BristolRidge:
-            /*case CodeName.StoneyRidge:*/ return CodenameGeneration.Fp4;
+            case CodeName.StoneyRidge: return CodenameGeneration.Fp4;
             case CodeName.SummitRidge:
             case CodeName.PinnacleRidge: return CodenameGeneration.Am4V1;
             case CodeName.RavenRidge:
@@ -238,9 +235,8 @@ public class CpuService : ICpuService
 
     public void GetMemoryFrequencyBristol(ref uint[] frequency)
     {
-        // TODO: wait for new ZenStates Core, create pull with advanced Bristol CPUs support
-        //if (_cpu is { smu: not null } && _cpu.smu.GpuMb.SMU_MSG_GetMemoryFrequency > 0) 
-        //    _cpu.smu.SendGpuMbCommand(_cpu.smu.GpuMb.SMU_MSG_GetMemoryFrequency, ref frequency);
+        if (_cpu is { smu: not null } && _cpu.smu.GpuMb.SMU_MSG_GetMemoryFrequency > 0) 
+            _cpu.smu.SendGpuMbCommand(_cpu.smu.GpuMb.SMU_MSG_GetMemoryFrequency, ref frequency);
     }
 
     public bool Avx512AvailableByCodename => _codeName >= CodeName.Raphael;
