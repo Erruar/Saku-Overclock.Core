@@ -554,10 +554,23 @@ public class OcFinderService : IOcFinderService
             slowValue = 58;
         }
 
+        if (_codenameGeneration == CodenameGeneration.Fp4)
+        {
+            stapmValue = type switch
+            {
+                PresetType.Min => 55,
+                PresetType.Eco => 75,
+                PresetType.Balance => 100,
+                PresetType.Speed => 110,
+                PresetType.Max => 115,
+                _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+            };
+        }
+
         // Временные параметры
         var (stapmTime, slowTime, prochotRamp) = GetTimingParameters(type, level);
         var stapmSetting = new PresetOption<double>(stapmValue != 0, stapmValue);
-        var slowSetting = new PresetOption<double>(slowValue != 0 || stapmValue != 0, slowValue != 0 ? slowValue : stapmValue);
+        var slowSetting = new PresetOption<double>( _codenameGeneration != CodenameGeneration.Fp4 && (slowValue != 0 || stapmValue != 0), slowValue != 0 ? slowValue : stapmValue);
         var settings = new SettingsOptions
         {
             Type = type,
@@ -829,7 +842,7 @@ public class OcFinderService : IOcFinderService
         };
     }
     
-    private static PresetRecommendations ParseRecommendations(SettingsOptions options)
+    private PresetRecommendations ParseRecommendations(SettingsOptions options)
     {
         var result = new PresetRecommendations();
         
@@ -838,6 +851,9 @@ public class OcFinderService : IOcFinderService
         {
             Fill(result.TemperatureLimits, L(options.CpuSettings.CpuMaximumTemperature.Value), "C");
         }
+
+        var stapmSign = "W";
+        if (_codenameGeneration == CodenameGeneration.Fp4) stapmSign = "%";
 
         // Лимиты мощности
         if (options.CpuSettings.CpuActualPowerLimit.IsEnabled) // fast
@@ -852,13 +868,13 @@ public class OcFinderService : IOcFinderService
             
             if (!options.CpuSettings.CpuSustainedPowerLimit.IsEnabled) // ! stapm
             {
-                Fill(result.StapmLimits, fast, "W"); // stapm = fast
+                Fill(result.StapmLimits, fast, stapmSign); // stapm = fast
             }
         }
     
         if (options.CpuSettings.CpuSustainedPowerLimit.IsEnabled)
         {
-            Fill(result.StapmLimits, L(options.CpuSettings.CpuSustainedPowerLimit.Value), "W");
+            Fill(result.StapmLimits, L(options.CpuSettings.CpuSustainedPowerLimit.Value), stapmSign);
         }
 
         if (options.CpuSettings.CpuAveragePowerLimit.IsEnabled)
