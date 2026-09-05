@@ -80,10 +80,10 @@ public class SensorIndexResolver : ISensorIndexResolver
 
         return ver switch
         {
-            // Bristol → индекс 174
+            // Bristol → индекс 137
             0x00130002 or
-            0x00130004 => 166,
-            0x001300C8 => 174,
+            0x00130004 => 134,
+            0x001300C8 => 137,
             
             0x00540004 or    // Zen 4
             0x00540104 or    // Zen 4
@@ -105,8 +105,8 @@ public class SensorIndexResolver : ISensorIndexResolver
         {
             // Bristol → индекс 134
             0x00130002 or
-            0x00130004 => 131,
-            0x001300C8 => 134,
+            0x00130004 => 135,
+            0x001300C8 => 138,
             
             0x00540004 or     // Zen 4
             0x00540104 or     // Zen 4
@@ -158,8 +158,8 @@ public class SensorIndexResolver : ISensorIndexResolver
         {
             // Bristol → индекс 22
             0x00130002 or
-            0x00130004 => 135,
-            0x001300C8 => 138,
+            0x00130004 or
+            0x001300C8 => 21,
             
             0x00190001 => 22, // Zen
             0x00240803 or     // Zen 2
@@ -216,10 +216,10 @@ public class SensorIndexResolver : ISensorIndexResolver
 
         return ver switch
         {
-            // Bristol → индекс 23
+            // Bristol → индекс 134
             0x00130002 or
-            0x00130004 or
-            0x001300C8 => 21,
+            0x00130004 => 131,
+            0x001300C8 => 134,
             
             0x00190001 or    // Zen
             0x00240803 or    // Zen 2
@@ -1343,10 +1343,10 @@ public class SensorIndexResolver : ISensorIndexResolver
     {
         return ver switch
         {
-            // Bristol → индекс 160
+            // Bristol → индекс 174
             0x00130002 or
-            0x00130004 => 157,
-            0x001300C8 => 160,
+            0x00130004 => 166,
+            0x001300C8 => 174, // Stapm scalar value
             
             // Raven and up → индекс 346, 344, 377
             0x001E0001 or
