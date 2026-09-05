@@ -569,7 +569,6 @@ public class OcFinderService : IOcFinderService
 
         // Временные параметры
         var (stapmTime, slowTime, prochotRamp) = GetTimingParameters(type, level);
-        var stapmSetting = new PresetOption<double>(stapmValue != 0, stapmValue);
         var slowSetting = new PresetOption<double>( _codenameGeneration != CodenameGeneration.Fp4 && (slowValue != 0 || stapmValue != 0), slowValue != 0 ? slowValue : stapmValue);
         var settings = new SettingsOptions
         {
@@ -578,8 +577,8 @@ public class OcFinderService : IOcFinderService
             Architecture = preset,
             CpuSettings = new PresetCpuSettings
             {
-                LaptopPowerLimit = stapmSetting,
-                CpuSustainedPowerLimit = stapmSetting,
+                LaptopPowerLimit = new PresetOption<double>(stapmValue != 0, stapmValue),
+                CpuSustainedPowerLimit = new PresetOption<double>(stapmValue != 0, stapmValue),
                 CpuActualPowerLimit = new PresetOption<double>(fastValue != 0, fastValue),
                 CpuAveragePowerLimit = slowSetting,
                 CpuMaximumTemperature = new PresetOption<double>(tempLimit != 0, tempLimit),
