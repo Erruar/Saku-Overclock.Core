@@ -273,7 +273,7 @@ public class OcFinderService : IOcFinderService
 
         var cpuPower = _cpu.IsAvailable ? _cpu.ReturnCpuPowerLimit() : -1;
         CheckUndervoltingFeature();
-        var powerTable = _dataProvider?.GetPowerTable();
+        var powerTable = _dataProvider.GetPowerTable();
         var powerTableCheckError = false;
         var checkupCpuPower = 35d;
 
