@@ -155,7 +155,36 @@ public class CpuService : ICpuService
     public SmuAddressSet Hsmp => new(_cpu?.smu.Hsmp?.SMU_ADDR_MSG ?? 0, _cpu?.smu.Hsmp?.SMU_ADDR_RSP ?? 0, _cpu?.smu.Hsmp?.SMU_ADDR_ARG ?? 0);
 
     public CpuFamily Family => (CpuFamily)(_cpu?.info.family ?? 0);
-    public bool ReadMsr(uint index, ref uint eax, ref uint edx) => _cpu?.ReadMsr(index, ref eax, ref edx) ?? false;
+
+    public bool ReadMsr(uint index, ref uint eax, ref uint edx)
+    {
+        if (GetCodenameGeneration() == CodenameGeneration.Fp4)
+        {
+            var args = new uint[6];
+            const uint bristolMonitoringV1Cmd = 0x13000004;
+            const uint bristolMonitoringV1Rsp = 0x13000014;
+            const uint bristolMonitoringV1Arg = 0x13000038;
+            const uint bristolMonitoringV1SmcReadMsr = 0x4;
+            args[0] = index;
+            if ((SmuStatus)SendSmuCommand(
+                    new SmuAddressSet(
+                        bristolMonitoringV1Cmd, 
+                        bristolMonitoringV1Rsp, 
+                        bristolMonitoringV1Arg), 
+                    bristolMonitoringV1SmcReadMsr,
+                    ref args) == SmuStatus.Ok)
+            {
+                eax = args[0];
+                edx = args[1];
+            }
+            else
+            {
+                return false;
+            }
+        } 
+        
+        return _cpu?.ReadMsr(index, ref eax, ref edx) ?? false;
+    } 
     public bool WriteMsr(uint msr, uint eax, uint edx) => _cpu?.WriteMsr(msr, eax, edx) ?? false;
 
     public string CpuName => ReadCpuInformation().name;
