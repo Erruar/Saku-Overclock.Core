@@ -25,7 +25,7 @@ public class PstateService(
         {
             CurrentFamily = cpuService.Family;
 
-            if (CurrentFamily < CpuFamily.Family17H)
+            if (CurrentFamily < CpuFamily.Family10H)
             {
                 logger.LogError("P-States not supported for CPU family {CurrentFamily}", CurrentFamily);
             }
