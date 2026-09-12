@@ -215,28 +215,64 @@ public class CpuService : ICpuService
             var memoryConfig = _cpu.GetMemoryConfig();
             var convertedModules = new List<MemoryModule>();
             foreach (var module in memoryConfig.Modules)
-            {
                 convertedModules.Add(new MemoryModule
                 {
                     Capacity = module.Capacity.ToString(),
                     Manufacturer = module.Manufacturer,
                     PartNumber = module.PartNumber
                 });
-            }
 
-            var umcBase = 0u;
-            var umcOffset1 = 0u;
-            var umcOffset2 = 0u;
+            long freqFromRatio;
+            string tcl, trcdwr, trcdrd, tras, trp, trc;
+
             if (GetCodenameGeneration() != CodenameGeneration.Fp4)
             {
-                umcBase = _cpu.ReadDword(0x50200);
-                umcOffset1 = _cpu.ReadDword(0x50204);
-                umcOffset2 = _cpu.ReadDword(0x50208);
+                // Ryzen UMC
+                var umcBase = _cpu.ReadDword(0x50200);
+                var umcOffset1 = _cpu.ReadDword(0x50204);
+                var umcOffset2 = _cpu.ReadDword(0x50208);
+
+                freqFromRatio = ((MemType)memoryConfig.Type == MemType.Ddr4
+                    ? (umcBase & 0x7F) / 3
+                    : (umcBase & 0xFFFF) / 100) * 200;
+
+                tcl = (umcOffset1 & 0x3F) + "T";
+                trcdwr = ((umcOffset1 >> 24) & 0x3F) + "T";
+                trcdrd = ((umcOffset1 >> 16) & 0x3F) + "T";
+                tras = ((umcOffset1 >> 8) & 0x7F) + "T";
+                trp = ((umcOffset2 >> 16) & 0x3F) + "T";
+                trc = (umcOffset2 & 0xFF) + "T";
+            }
+            else
+            {
+                // Pre-Ryzen D18F2 DRAM registers 
+                var dramConfigHigh = 0u;
+                var dramTiming0 = 0u;
+                var dramTiming1 = 0u;
+
+                // 0x80009294 = Bus 0, Dev 18, Func 2, Reg 0x94
+                _cpu.IoReadDwordEx(0x8000C294, ref dramConfigHigh);
+                // 0x82009200 = Bus 0, Dev 18, Func 2, Reg 0x200 (ExtReg 2)
+                _cpu.IoReadDwordEx(0x8200C200, ref dramTiming0);
+                // 0x82009204 = Bus 0, Dev 18, Func 2, Reg 0x204 (ExtReg 2)
+                _cpu.IoReadDwordEx(0x8200C204, ref dramTiming1);
+
+                var regValue = dramConfigHigh & 0x1F;
+                freqFromRatio = 400 + regValue * 200 / 3;
+                if (freqFromRatio == 666) freqFromRatio += 1;
+
+                tcl = (dramTiming0 & 0x1F) + "T"; // bits 0-4
+                trcdwr = trcdrd = ((dramTiming0 >> 8) & 0x1F) + "T"; // bits 8-12, same for both
+
+                trp = ((dramTiming0 >> 16) & 0x1F) + "T"; // bits 16-20
+                tras = ((dramTiming0 >> 24) & 0x3F) + "T"; // bits 24-29
+
+                trc = (dramTiming1 & 0x3F) + "T"; // bits 0-5 from 0x204
             }
 
-            var freqFromRatio = ((MemType)memoryConfig.Type == MemType.Ddr4 ? (umcBase & 0x7F) / 3 : (umcBase & 0xFFFF) / 100) * 200;
             var memorySpeed = (int)_cpu.powerTable.MCLK * 2;
             if (memorySpeed == 0) memorySpeed = ConfiguredMemorySpeed;
+
             return new MemoryConfig
             {
                 Type = (MemType)memoryConfig.Type,
@@ -246,12 +282,12 @@ public class CpuService : ICpuService
                 FrequencyFromTimings = (int)freqFromRatio,
                 MemoryTimings = new MemoryTimings
                 {
-                    Tcl = (umcOffset1 & 0x3F) + "T",
-                    Trcdwr = ((umcOffset1 >> 24) & 0x3F) + "T",
-                    Trcdrd = ((umcOffset1 >> 16) & 0x3F) + "T",
-                    Tras = ((umcOffset1 >> 8) & 0x7F) + "T",
-                    Trp = ((umcOffset2 >> 16) & 0x3F) + "T",
-                    Trc = (umcOffset2 & 0xFF) + "T"
+                    Tcl = tcl,
+                    Trcdwr = trcdwr,
+                    Trcdrd = trcdrd,
+                    Tras = tras,
+                    Trp = trp,
+                    Trc = trc
                 }
             };
         }
