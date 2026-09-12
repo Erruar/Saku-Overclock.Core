@@ -166,13 +166,14 @@ public class CpuService : ICpuService
             const uint bristolMonitoringV1Arg = 0x13000038;
             const uint bristolMonitoringV1SmcReadMsr = 0x4;
             args[0] = index;
-            if ((SmuStatus)SendSmuCommand(
-                    new SmuAddressSet(
-                        bristolMonitoringV1Cmd, 
-                        bristolMonitoringV1Rsp, 
-                        bristolMonitoringV1Arg), 
-                    bristolMonitoringV1SmcReadMsr,
-                    ref args) == SmuStatus.Ok)
+            SendSmuCommand(
+                new SmuAddressSet(
+                    bristolMonitoringV1Cmd,
+                    bristolMonitoringV1Rsp,
+                    bristolMonitoringV1Arg),
+                bristolMonitoringV1SmcReadMsr,
+                ref args);
+            if (args[0] != index)
             {
                 eax = args[0];
                 edx = args[1];
