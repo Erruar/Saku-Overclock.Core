@@ -160,12 +160,14 @@ public class CpuService : ICpuService
     {
         if (GetCodenameGeneration() == CodenameGeneration.Fp4)
         {
+            _logger.LogError("Entering ReadMsr");
             var args = new uint[6];
             const uint bristolMonitoringV1Cmd = 0x13000004;
             const uint bristolMonitoringV1Rsp = 0x13000014;
             const uint bristolMonitoringV1Arg = 0x13000038;
             const uint bristolMonitoringV1SmcReadMsr = 0x4;
             args[0] = index;
+            var res =
             SendSmuCommand(
                 new SmuAddressSet(
                     bristolMonitoringV1Cmd,
@@ -173,13 +175,16 @@ public class CpuService : ICpuService
                     bristolMonitoringV1Arg),
                 bristolMonitoringV1SmcReadMsr,
                 ref args);
+            _logger.LogWarning("ReadMsr cmd result: {res}", res);
             if (args[0] != index)
             {
+                _logger.LogWarning("ReadMsr args result: {args[0]}{args[1]}", args[0], args[1]);
                 eax = args[0];
                 edx = args[1];
             }
             else
             {
+                _logger.LogWarning("ReadMsr failed: {args[0]}{args[1]}", args[0], args[1]);
                 return false;
             }
         } 
