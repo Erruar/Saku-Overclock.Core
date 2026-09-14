@@ -246,16 +246,26 @@ public class CpuService : ICpuService
             else
             {
                 // Pre-Ryzen D18F2 DRAM registers 
-                var dramConfigHigh = 0u;
-                var dramTiming0 = 0u;
-                var dramTiming1 = 0u;
+                uint dramConfigHigh;
+                uint dramTiming0;
+                uint dramTiming1;
+                
+                // Базовый адрес MMIO для платформы
+                uint mmioBase = 0xF8000000;
+    
+                // Смещение конфигурационного пространства для Bus 0, Dev 24 (0x18), Func 2
+                // (0 << 20) | (24 << 15) | (2 << 12) = 0xC2000
+                const uint pciOffsetBase = 0xC2000;
 
-                // 0x80009294 = Bus 0, Dev 18, Func 2, Reg 0x94
-                _cpu.IoReadDwordEx(0x8000C294, ref dramConfigHigh);
-                // 0x82009200 = Bus 0, Dev 18, Func 2, Reg 0x200 (ExtReg 2)
-                _cpu.IoReadDwordEx(0x8200C200, ref dramTiming0);
-                // 0x82009204 = Bus 0, Dev 18, Func 2, Reg 0x204 (ExtReg 2)
-                _cpu.IoReadDwordEx(0x8200C204, ref dramTiming1);
+                // 0x94 = Bus 0, Dev 18h, Func 2, Reg 0x94
+                _cpu.io.GetPhysLong(mmioBase + pciOffsetBase + 0x94u, out dramConfigHigh);
+    
+                // 0x200 = Bus 0, Dev 18h, Func 2, Reg 0x200 (ExtReg 2)
+                _cpu.io.GetPhysLong(mmioBase + pciOffsetBase + 0x200u, out dramTiming0);
+    
+                // 0x204 = Bus 0, Dev 18h, Func 2, Reg 0x204 (ExtReg 2)
+                _cpu.io.GetPhysLong(mmioBase + pciOffsetBase + 0x204u, out dramTiming1);
+                
 
                 var regValue = dramConfigHigh & 0x1F;
                 freqFromRatio = 400 + regValue * 200 / 3;
