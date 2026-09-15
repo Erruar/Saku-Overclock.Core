@@ -8,6 +8,7 @@ namespace Saku_Overclock.Core.Services;
 
 public partial class ApplyerService(
     IAppSettingsService settingsService,
+    ISafeGuardsService safeGuardsService,
     IPresetManagerService presetManager,
     ICpuService cpuService,
     ILogger<ApplyerService> logger)
@@ -52,7 +53,7 @@ public partial class ApplyerService(
                 var intervalMs = (int)(settingsService.ReapplyOverclockTimer * 1000);
                 if (intervalMs <= 0) intervalMs = 3000;
 
-                _timer = new Timer(async void (_) =>
+                _timer = new Timer(void (_) =>
                 {
                     try
                     {
@@ -72,7 +73,7 @@ public partial class ApplyerService(
     
     public async Task RestoreAppliedSettings()
     {
-        if (settingsService.ReapplyLatestSettingsOnAppLaunch)
+        if (settingsService.ReapplyLatestSettingsOnAppLaunch && !safeGuardsService.PreviousSessionCrashed)
         {
             if (settingsService.Preset != -1 && settingsService.Preset < presetManager.Presets.Length)
             {
