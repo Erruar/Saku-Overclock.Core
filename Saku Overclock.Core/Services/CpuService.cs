@@ -266,10 +266,23 @@ public class CpuService : ICpuService
                 // 0x204 = Bus 0, Dev 18h, Func 2, Reg 0x204 (ExtReg 2)
                 _cpu.io.GetPhysLong(mmioBase + pciOffsetBase + 0x204u, out dramTiming1);
                 
-
                 var regValue = dramConfigHigh & 0x1F;
-                freqFromRatio = 400 + regValue * 200 / 3;
-                if (freqFromRatio == 666) freqFromRatio += 1;
+
+                switch (regValue)
+                {
+                    case 0x02: freqFromRatio = 400; break;
+                    case 0x04: freqFromRatio = 667; break;
+                    case 0x06: freqFromRatio = 800; break;
+                    case 0x0A: freqFromRatio = 1066; break;
+                    case 0x0E: freqFromRatio = 1333; break;
+                    case 0x12: freqFromRatio = 1600; break;
+                    case 0x16: freqFromRatio = 1866; break;
+                    case 0x1A: freqFromRatio = 2133; break;
+                    case 0x1F: freqFromRatio = 2400; break;
+                    default: 
+                        freqFromRatio = 400 + regValue * 200 / 3;
+                        break;
+                }
 
                 tcl = (dramTiming0 & 0x1F) + "T"; // bits 0-4
                 trcdwr = trcdrd = ((dramTiming0 >> 8) & 0x1F) + "T"; // bits 8-12, same for both
