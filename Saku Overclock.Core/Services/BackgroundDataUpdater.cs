@@ -179,7 +179,8 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
         {
             _debounceTimer?.Dispose();
             _cts.Cancel();
-            notifyIcons.DisposeAllNotifyIcons();
+            if (notifyIcons.IsIconsCreated)
+                notifyIcons.DisposeAllNotifyIcons();
             RtssHandler.ResetOsdText();
         }
     }
