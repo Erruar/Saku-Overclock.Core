@@ -131,6 +131,7 @@ public class ZenstatesCoreProvider(
     /// </summary>
     private float GetSensorValue(SensorId sensorId, float fallbackValue = 0f)
     {
+        const int mendocinoPowerTableVerion = 0x005A0002;
         const int hawkPointPowerTableVerion = 0x004C0009;
         const int hawkPointApuVoltageAltIndex = 39;
 
@@ -148,6 +149,12 @@ public class ZenstatesCoreProvider(
             sensorReader.CurrentTableVersion == hawkPointPowerTableVerion)
         {
             (success, value) = sensorReader.ReadSensorByIndex(hawkPointApuVoltageAltIndex);
+        }
+
+        if (sensorId == SensorId.ApuFrequency &&
+            sensorReader.CurrentTableVersion == mendocinoPowerTableVerion)
+        {
+            value *= 1000;
         }
 
         if (!success || value == 0)
