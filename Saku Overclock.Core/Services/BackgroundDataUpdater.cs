@@ -8,10 +8,8 @@ using Saku_Overclock.Shared.Models;
 namespace Saku_Overclock.Core.Services;
 
 public class BackgroundDataUpdater(IDataProvider? dataProvider, 
-    ICpuService cpuService,
     IApplyerService applyerService,
     IAppSettingsService appSettings,
-    IRtssSettingsService rtssSettings,
     INotifyIconsService notifyIcons,
     IPresetManagerService presetManager,
     ISharedMemoryWriterService sharedMemoryWriter,
@@ -42,15 +40,6 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
 
     public void StartAsync(CancellationToken cancellationToken)
     {
-        try
-        {
-            if (appSettings.NiIconsEnabled && !notifyIcons.IsIconsCreated) notifyIcons.CreateNotifyIcons();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("Unable to create TrayMon icons {ex}", ex);
-        }
-
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _debounceTimer = new Timer(BatteryDebounceTimer_Tick, null, Timeout.Infinite, Timeout.Infinite);
 
@@ -131,7 +120,6 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
                     DataUpdated?.Invoke(this, _sensorsInformation);
 
                     sharedMemoryWriter.UpdateSharedMemory(_sensorsInformation);
-                    UpdateTrayMonAndRtss(_sensorsInformation);
 
                     if (rawSharedMemoryWriter.IsRawUpdateActive)
                     {
@@ -179,9 +167,6 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
         {
             _debounceTimer?.Dispose();
             _cts.Cancel();
-            if (notifyIcons.IsIconsCreated)
-                notifyIcons.DisposeAllNotifyIcons();
-            RtssHandler.ResetOsdText();
         }
     }
 
@@ -476,90 +461,4 @@ public class BackgroundDataUpdater(IDataProvider? dataProvider,
 
     #endregion
 
-    #region Update Ni-Icons & RTSS information voids
-
-    private void UpdateTrayMonAndRtss(SensorsInformation? sensorsInformation)
-    {
-        // Валидация входных данных
-        if (sensorsInformation == null)
-        {
-            logger.LogWarning("UpdateTrayMonAndRtss: SensorsInformation is null");
-            return;
-        }
-
-        try
-        {
-            // RTSS обновление
-            if (appSettings.RtssMetricsEnabled)
-                rtssSettings.UpdateRtssMetrics(sensorsInformation, applyerService.GetSelectedPresetName(),
-                    (int?)cpuService.Cores);
-            // Сброс RTSS если был включен, но теперь выключен
-            else if (rtssSettings.IsRtssUpdated)
-                try
-                {
-                    RtssHandler.ResetOsdText();
-                    rtssSettings.IsRtssUpdated = false;
-                }
-                catch (Exception rtssResetEx)
-                {
-                    logger.LogWarning("Failed to reset RTSS: {rtssResetEx.Message}", rtssResetEx.Message);
-                }
-
-            // Notify Icons обновление
-            if (appSettings.NiIconsEnabled)
-                notifyIcons.UpdateNotifyIcons(sensorsInformation);
-            // Очистка иконок если были включены, но теперь выключены
-            else if (notifyIcons.IsIconsUpdated)
-                try
-                {
-                    notifyIcons.DisposeAllNotifyIcons();
-                    notifyIcons.IsIconsCreated = false;
-                    notifyIcons.IsIconsUpdated = false;
-                }
-                catch (Exception iconsDisposeEx)
-                {
-                    logger.LogWarning("Failed to dispose notify icons: {iconsDisposeEx.Message}", iconsDisposeEx.Message);
-                }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("UpdateTrayMonAndRtss failed: {ex}", ex);
-
-            // Попытаться очистить ресурсы при критической ошибке
-            TryCleanupResources();
-        }
-    }
-
-
-    private void TryCleanupResources()
-    {
-        try
-        {
-            if (rtssSettings.IsRtssUpdated)
-            {
-                RtssHandler.ResetOsdText();
-                rtssSettings.IsRtssUpdated = false;
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning("Failed to cleanup Rtss resources: {ex.Message}", ex.Message);
-        }
-
-        try
-        {
-            if (notifyIcons.IsIconsUpdated)
-            {
-                notifyIcons.DisposeAllNotifyIcons();
-                notifyIcons.IsIconsCreated = false;
-                notifyIcons.IsIconsUpdated = false;
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning("Failed to update TrayMon icons: {ex.Message}", ex.Message);
-        }
-    }
-
-    #endregion
 }

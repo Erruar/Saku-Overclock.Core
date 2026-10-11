@@ -34,22 +34,4 @@ public class NotifyIconsService(IFileService fileService, IpcHub hub) : INotifyI
         SettingsIpcRegistrator.RegisterSimpleSettings(hub, "NotifyIcons",
             Snapshot, ApplyAndSave, IpcJsonContext.Default.ListNiIconsElements);
     }
-
-    public void CreateNotifyIcons()
-    {
-        throw new InvalidOperationException();
-    }
-
-    public void UpdateNotifyIcons(SensorsInformation sensorsInformation)
-    {
-        throw new InvalidOperationException();
-    }
-
-    public void DisposeAllNotifyIcons()
-    {
-        throw new InvalidOperationException();
-    }
-
-    public bool IsIconsCreated { get; set; }
-    public bool IsIconsUpdated { get; set; }
 }
