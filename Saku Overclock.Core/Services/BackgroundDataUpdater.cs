@@ -10,7 +10,6 @@ namespace Saku_Overclock.Core.Services;
 public class BackgroundDataUpdater(IDataProvider? dataProvider, 
     IApplyerService applyerService,
     IAppSettingsService appSettings,
-    INotifyIconsService notifyIcons,
     IPresetManagerService presetManager,
     ISharedMemoryWriterService sharedMemoryWriter,
     IRawSharedMemoryWriterService rawSharedMemoryWriter,
