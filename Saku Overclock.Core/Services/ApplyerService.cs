@@ -6,7 +6,7 @@ using Saku_Overclock.Shared.Models;
 
 namespace Saku_Overclock.Core.Services;
 
-public partial class ApplyerService(
+public class ApplyerService(
     IAppSettingsService settingsService,
     ISafeGuardsService safeGuardsService,
     IPresetManagerService presetManager,
@@ -15,6 +15,7 @@ public partial class ApplyerService(
     : IApplyerService
 {
     public event Action<List<ApplyResult>>? OnSettingsApplied;
+    public event EventHandler<Preset>? PresetChanged;
     private Timer? _timer; // Таймер для пере-применения настроек разгона
     private readonly Lock _timerLock = new(); // lock-объект для таймера
 
@@ -33,6 +34,7 @@ public partial class ApplyerService(
             _selectedPreset = preset.PresetName;
             var results = await Task.Run(() => cpuService.ApplyPresetInternal(preset));
             OnSettingsApplied?.Invoke(results);
+            PresetChanged?.Invoke(this, preset);
             ManageReapplyTimer(preset);
         }
         catch (Exception ex)
@@ -100,7 +102,7 @@ public partial class ApplyerService(
     {
         return _selectedPreset;
     }
-    
+
     private void ScheduleApplyPreset()
     {
         lock (_applyDebounceLock)

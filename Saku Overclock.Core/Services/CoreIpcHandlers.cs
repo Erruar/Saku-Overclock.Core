@@ -131,6 +131,20 @@ public class CoreIpcHandlers(
                 return Task.FromResult(Fail(cmd.Id, ex.Message));
             }
         });
+        
+        hub.RegisterHandler("Apply_GetSelectedPresetName", (cmd, _) =>
+        {
+            try
+            {
+                var name = applyer.GetSelectedPresetName();
+                return Task.FromResult(Ok(cmd.Id, JsonSerializer.Serialize(name, IpcJsonContext.Default.String)));
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "GetSelectedPresetName failed");
+                return Task.FromResult(Fail(cmd.Id, ex.Message));
+            }
+        });
 
         // OnSettingsApplied подписывается ОДИН раз здесь, при регистрации,
         // и рассылает результат всем подключённым клиентам — неважно, кто вызвал apply
@@ -139,6 +153,12 @@ public class CoreIpcHandlers(
         {
             var payload = JsonSerializer.Serialize(results, IpcJsonContext.Default.ListApplyResult);
             _ = hub.BroadcastEventAsync("PresetApplied", payload);
+        };
+
+        applyer.PresetChanged += (sender, args) =>
+        {
+            var payload = JsonSerializer.Serialize(args, IpcJsonContext.Default.Preset);
+            _ = hub.BroadcastEventAsync("PresetChanged", payload);
         };
     }
 

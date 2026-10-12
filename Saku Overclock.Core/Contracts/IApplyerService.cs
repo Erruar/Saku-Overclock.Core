@@ -30,6 +30,11 @@ public interface IApplyerService : IDisposable
     /// </summary>
     /// <returns>Имя применённого пресета</returns>
     string GetSelectedPresetName();
+    
+    /// <summary>
+    ///     Пресет изменился
+    /// </summary>
+    event EventHandler<Preset> PresetChanged;
 
     /// <summary>
     ///     Событие результатов применения пресета
