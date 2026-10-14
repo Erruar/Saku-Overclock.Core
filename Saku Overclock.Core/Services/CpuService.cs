@@ -551,6 +551,11 @@ public class CpuService : ICpuService
             var mode = preset.CpuModesSettings.CpuFrequency04Fix.Value == 0;
             switch (generation)
             {
+                case CodenameGeneration.Fp4:
+                    // Do not support restore
+                    TryApply("Param_GPU_g16/Text", () => _cpu.ManageSmuFeatureState(false, 7));
+                    TryApply("Param_GPU_g16/Text", () => _cpu.ManageSmuFeatureState(false, 22));
+                    break;
                 case CodenameGeneration.Fp6 or CodenameGeneration.Ff3:
                 case CodenameGeneration.Fp5 when IsRaven:
                     TryApply("Param_GPU_g16/Text", () => _cpu.ManageSmuFeatureState(mode, 37));
