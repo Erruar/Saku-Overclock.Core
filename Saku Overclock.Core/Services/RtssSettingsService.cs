@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Saku_Overclock.Core.Contracts;
 using Saku_Overclock.Core.Helpers;
 using Saku_Overclock.Shared;
+using Saku_Overclock.Shared.Ipc;
 using Saku_Overclock.Shared.Models;
 
 namespace Saku_Overclock.Core.Services;
@@ -39,6 +40,8 @@ public class RtssSettingsService(IFileService fileService, IpcHub hub) : IRtssSe
             _settings = updated;
         }
         fileService.Save(_folder, FileName, updated);
+        
+        _ = hub.BroadcastEventAsync("Rtss_UpdateRequired","", CancellationToken.None);
     }
 
     public void RegisterIpcHandlers()

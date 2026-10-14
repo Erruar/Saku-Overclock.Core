@@ -151,7 +151,7 @@ public class AppSettingsService(IFileService fileService, IpcHub hub) : IAppSett
         await hub.BroadcastEventAsync("AppSettingsChanged", payload, ct);
     }
 
-    public void RegisterIpcHandlers()
+    private void RegisterIpcHandlers()
     {
         LoadSettings();
         hub.RegisterHandler("Get_AppSettings", (cmd, _) =>
