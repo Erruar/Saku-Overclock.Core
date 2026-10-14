@@ -200,7 +200,7 @@ public class PresetManagerService(IFileService fileService,
                 return Fail(cmd.Id, "Invalid preset index");
 
             SaveSettings();
-            await hub.BroadcastEventAsync("PresetChanged", cmd.Payload, ct);
+            await hub.BroadcastEventAsync("PresetManager_PresetChanged", cmd.Payload, ct);
             return Ok(cmd.Id, cmd.Payload);
         });
 
@@ -324,7 +324,7 @@ public class PresetManagerService(IFileService fileService,
         Preset[] snapshot;
         lock (_lock) snapshot = Presets;
         var payload = JsonSerializer.Serialize(snapshot, IpcJsonContext.Default.PresetArray);
-        await hub.BroadcastEventAsync("PresetsChanged", payload, ct);
+        await hub.BroadcastEventAsync("PresetManager_PresetsChanged", payload, ct);
         return Ok(cmdId, payload);
     }
 

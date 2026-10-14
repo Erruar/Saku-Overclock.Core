@@ -152,13 +152,13 @@ public class CoreIpcHandlers(
         applyer.OnSettingsApplied += results =>
         {
             var payload = JsonSerializer.Serialize(results, IpcJsonContext.Default.ListApplyResult);
-            _ = hub.BroadcastEventAsync("PresetApplied", payload);
+            _ = hub.BroadcastEventAsync("Apply_PresetApplied", payload);
         };
 
         applyer.PresetChanged += (sender, args) =>
         {
             var payload = JsonSerializer.Serialize(args, IpcJsonContext.Default.Preset);
-            _ = hub.BroadcastEventAsync("PresetChanged", payload);
+            _ = hub.BroadcastEventAsync("Apply_PresetChanged", payload);
         };
     }
 
