@@ -15,7 +15,7 @@ public interface IOcFinderService
     /// </summary>
     /// <param name="type">Тип требуемого пресета</param>
     /// <param name="level">Уровень оптимизации пресета</param>
-    /// <returns>Конфигурация пресета: RyzenAdjLine, PresetMetrics, PresetOptions, доступность андервольтинга</returns>
+    /// <returns>Конфигурация пресета: PresetMetrics, PresetOptions, доступность андервольтинга</returns>
     PresetConfiguration CreatePreset(PresetType type, OptimizationLevel level);
 
     /// <summary>

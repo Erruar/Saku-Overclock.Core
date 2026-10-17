@@ -16,6 +16,7 @@ public class ApplyerService(
 {
     public event Action<List<ApplyResult>>? OnSettingsApplied;
     public event EventHandler<Preset>? PresetChanged;
+    public event Action? SystemCrashedNotification;
     private Timer? _timer; // Таймер для пере-применения настроек разгона
     private readonly Lock _timerLock = new(); // lock-объект для таймера
 
@@ -24,7 +25,8 @@ public class ApplyerService(
 
     private readonly Lock _applyDebounceLock = new(); // lock-объект для применения пресета при помощи горячих клавиш
     private int _pendingCustomPresetIndex = -1; // Индекс кастомного пресета для применения
-
+    private bool _restorePending;
+    
     private string _selectedPreset = "Unknown"; // Применённый пресет
 
     public async Task ApplyPreset(Preset preset, bool saveInfo = false)
@@ -75,13 +77,21 @@ public class ApplyerService(
     
     public async Task RestoreAppliedSettings()
     {
-        if (settingsService.ReapplyLatestSettingsOnAppLaunch && !safeGuardsService.PreviousSessionCrashed)
+        if (settingsService.ReapplyLatestSettingsOnAppLaunch && (!settingsService.EnableSafeguards || !safeGuardsService.PreviousSessionCrashed || _restorePending))
         {
             if (settingsService.Preset != -1 && settingsService.Preset < presetManager.Presets.Length)
             {
                 await ApplyPreset(presetManager.Presets[settingsService.Preset]);
             }
         }
+
+        if (settingsService is { ReapplyLatestSettingsOnAppLaunch: true, EnableSafeguards: true } && safeGuardsService.PreviousSessionCrashed)
+        {
+            // React on system crash, send notification "System crashed, settings were not applied [Apply]"
+            SystemCrashedNotification?.Invoke();
+        }
+
+        _restorePending = true;
     }
 
     public PresetId SwitchNextPreset()

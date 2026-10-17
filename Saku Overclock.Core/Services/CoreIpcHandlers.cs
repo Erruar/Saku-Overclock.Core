@@ -15,10 +15,12 @@ public class CoreIpcHandlers(
     ILogger<CoreIpcHandlers> logger,
     IpcHub hub)
 {
+    private bool _lazySystemCrashNotification;
+    
     public void RegisterIpcHandlers()
     {
         // ---- статичный аппаратный снапшот — один запрос на весь сеанс клиента ----
-        hub.RegisterHandler("Get_HardwareInfo", (cmd, _) =>
+        hub.RegisterHandler("Get_HardwareInfo", (cmd, cts) =>
         {
             var snapshot = new HardwareInfoSnapshot
             {
@@ -39,6 +41,10 @@ public class CoreIpcHandlers(
                 PstateSupported = powerState.IsSupported
             };
             var payload = JsonSerializer.Serialize(snapshot, IpcJsonContext.Default.HardwareInfoSnapshot);
+
+            if (_lazySystemCrashNotification)
+                _ = hub.BroadcastEventAsync("Apply_SystemCrashedNotification", "", cts);
+            
             return Task.FromResult(Ok(cmd.Id, payload));
         });
 // TODO: Fix Cpu debug
@@ -146,6 +152,20 @@ public class CoreIpcHandlers(
             }
         });
 
+        hub.RegisterHandler("Apply_ApplyStartupSettings", (cmd, _) =>
+        {
+            try
+            {
+                applyer.RestoreAppliedSettings();
+                return Task.FromResult(Ok(cmd.Id, ""));
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "ApplyStartupSettings failed");
+                return Task.FromResult(Fail(cmd.Id, ex.Message));
+            }
+        });
+
         // OnSettingsApplied подписывается ОДИН раз здесь, при регистрации,
         // и рассылает результат всем подключённым клиентам — неважно, кто вызвал apply
         // (сейчас только Client, но завтра сюда добавится Companion по хоткею)
@@ -159,6 +179,11 @@ public class CoreIpcHandlers(
         {
             var payload = JsonSerializer.Serialize(args, IpcJsonContext.Default.Preset);
             _ = hub.BroadcastEventAsync("Apply_PresetChanged", payload);
+        };
+        
+        applyer.SystemCrashedNotification += () =>
+        {
+            _lazySystemCrashNotification = true;
         };
     }
 

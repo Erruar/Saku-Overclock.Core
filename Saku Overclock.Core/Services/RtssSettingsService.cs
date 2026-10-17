@@ -1,10 +1,5 @@
-﻿using System.Buffers;
-using System.Text.RegularExpressions;
-using Microsoft.Extensions.Logging;
-using Saku_Overclock.Core.Contracts;
-using Saku_Overclock.Core.Helpers;
+﻿using Saku_Overclock.Core.Contracts;
 using Saku_Overclock.Shared;
-using Saku_Overclock.Shared.Ipc;
 using Saku_Overclock.Shared.Models;
 
 namespace Saku_Overclock.Core.Services;

@@ -40,4 +40,9 @@ public interface IApplyerService : IDisposable
     ///     Событие результатов применения пресета
     /// </summary>
     event Action<List<ApplyResult>>? OnSettingsApplied;
+    
+    /// <summary>
+    ///     Событие уведомления о прошлом краше системы
+    /// </summary>
+    event Action? SystemCrashedNotification;
 }

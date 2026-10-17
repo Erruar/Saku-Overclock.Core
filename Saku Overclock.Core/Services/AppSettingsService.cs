@@ -119,19 +119,19 @@ public class AppSettingsService(IFileService fileService, IpcHub hub) : IAppSett
         set => _settings.BatteryPreset = value;
     }
 
-    public string RyzenAdjLine
-    {
-        get => _settings.RyzenAdjLine;
-        set => _settings.RyzenAdjLine = value;
-    }
-
     public bool AppFirstRun
     {
         get => _settings.AppFirstRun;
         set => _settings.AppFirstRun = value;
     }
     
-    public void LoadSettings()
+    public bool EnableSafeguards
+    {
+        get => _settings.EnableSafeguards;
+        set => _settings.EnableSafeguards = value;
+    }
+
+    private void LoadSettings()
     {
         var loaded = fileService.Read<AppSettings>(_folder, FileName);
         if (loaded != null) _settings = loaded;
