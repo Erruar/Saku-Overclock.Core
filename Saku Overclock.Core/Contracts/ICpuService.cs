@@ -45,5 +45,6 @@ public interface ICpuService
     float? GetCpuTemperature();
     double ReturnCpuPowerLimit();
     bool ReturnUndervoltingAvailability();
+    string GenerateDebugReport();
     List<ApplyResult> ApplyPresetInternal(Preset preset);
 }

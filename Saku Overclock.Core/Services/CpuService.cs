@@ -367,8 +367,71 @@ public class CpuService : ICpuService
 
         return _cpu?.SetPsmMarginSingleCore(0,0) == true;
     }
-    
-    
+
+    public string GenerateDebugReport()
+    {
+        try
+        {
+            var sb = string.Empty;
+
+            sb += $"SakuDebugReport {CpuCodeName} {DateTime.Now:dd.MM.yyyy HH-mm-ss}\n";
+            sb += "Saku Overclock\n";
+
+            sb += "\n";
+
+            AddHeading("Common System Info");
+
+            sb += $"Available: {IsAvailable}\n";
+            sb += $"CpuName: {CpuName}\n";
+            sb += $"Family: {Family}\n";
+            sb += $"Cores: {Cores}\n";
+            sb += $"CodeName: {CpuCodeName}\n";
+            sb += $"CodeName Gen: {GetCodenameGeneration()}\n";
+            sb += $"Smt: {Smt}\n";
+            sb += $"SmuVersion: {SmuVersion}\n";
+            sb += $"TableVersion: {PowerTableVersion}\n";
+            sb += $"BaseCpuPower: {ReturnCpuPowerLimit()}W\n";
+            sb += $"UndervoltingAvailable: {ReturnUndervoltingAvailability()}\n";
+            sb += $"BIOS: {MotherBoardInfo.BiosVersion}\n";
+            sb += $"Motherboard Name: {MotherBoardInfo.MotherBoardName}\n";
+            sb += $"Motherboard Vendor: {MotherBoardInfo.MotherBoardVendor}\n";
+
+            sb += "\n";
+
+            AddHeading("PM Table: Smu Power Table");
+
+            if (PowerTable.Length == 0)
+            {
+                sb += "PowerTable: UNAVAILABLE\n";
+            }
+            else
+            {
+                for (var i = 0; i < PowerTable.Length; i++)
+                {
+                    var offset = (i * 4).ToString("X3");
+                    var value = PowerTable[i].ToString("F8");
+
+                    sb += $"{i} Offset {offset}: {value}\n";
+                }
+            }
+
+            return sb;
+
+            void AddHeading(string heading)
+            {
+                sb += "------------------------------------------------------------------\n";
+                sb += $"{heading}\n";
+                sb += "------------------------------------------------------------------\n";
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Generate debug failed {e}", e);
+            return string.Empty;
+        }
+    }
+
+
     public List<ApplyResult> ApplyPresetInternal(Preset preset)
     {
         var results = new List<ApplyResult>();

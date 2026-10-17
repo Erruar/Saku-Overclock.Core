@@ -19,7 +19,6 @@ public class CoreIpcHandlers(
     
     public void RegisterIpcHandlers()
     {
-        // ---- статичный аппаратный снапшот — один запрос на весь сеанс клиента ----
         hub.RegisterHandler("Get_HardwareInfo", (cmd, cts) =>
         {
             var snapshot = new HardwareInfoSnapshot
@@ -47,11 +46,21 @@ public class CoreIpcHandlers(
             
             return Task.FromResult(Ok(cmd.Id, payload));
         });
-// TODO: Fix Cpu debug
-        /*hub.RegisterHandler("Generate_Debug_Report", (cmd, _) =>
-            Ok(cmd.Id, cpu.GenerateDebugReport()));*/
 
-        // ---- вызывается по требованию ----
+        hub.RegisterHandler("Generate_Debug_Report", (cmd, _) =>
+        {
+            try
+            {
+                var data = cpu.GenerateDebugReport();
+                var payload = JsonSerializer.Serialize(data, IpcJsonContext.Default.String);
+                return Task.FromResult(Ok(cmd.Id, payload));
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException<IpcMessage>(exception);
+            }
+        });
+
         hub.RegisterHandler("Get_Pstates", (cmd, _) =>
         {
             try
@@ -106,7 +115,6 @@ public class CoreIpcHandlers(
         hub.RegisterHandler("Get_Is_Battery_Unavailable", (cmd, _) =>
             Task.FromResult(Ok(cmd.Id, JsonSerializer.Serialize(dataUpdater.IsBatteryUnavailable(), IpcJsonContext.Default.Boolean))));
 
-        // ---- применение пресета: команда ждёт завершения + broadcast результата ВСЕМ клиентам ----
         hub.RegisterHandler("Apply_Preset", async (cmd, _) =>
         {
             var req = JsonSerializer.Deserialize(cmd.Payload, IpcJsonContext.Default.ApplyPresetRequest);
@@ -166,9 +174,6 @@ public class CoreIpcHandlers(
             }
         });
 
-        // OnSettingsApplied подписывается ОДИН раз здесь, при регистрации,
-        // и рассылает результат всем подключённым клиентам — неважно, кто вызвал apply
-        // (сейчас только Client, но завтра сюда добавится Companion по хоткею)
         applyer.OnSettingsApplied += results =>
         {
             var payload = JsonSerializer.Serialize(results, IpcJsonContext.Default.ListApplyResult);
