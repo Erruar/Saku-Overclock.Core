@@ -36,7 +36,7 @@ public class CpuService : ICpuService
 
             IsAvailable = true;
             logger.LogInformation("Cpu service initialized.");
-            logger.LogError("CRITICAL: Last Error was {Exception}", _cpu.LastError);
+            if (_cpu.LastError != null) logger.LogError("CRITICAL: Last Error was {Exception}", _cpu.LastError);
         }
         catch (Exception e)
         {
