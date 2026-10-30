@@ -118,12 +118,6 @@ public class AppSettingsService(IFileService fileService, IpcHub hub) : IAppSett
         get => _settings.BatteryPreset;
         set => _settings.BatteryPreset = value;
     }
-
-    public bool AppFirstRun
-    {
-        get => _settings.AppFirstRun;
-        set => _settings.AppFirstRun = value;
-    }
     
     public bool EnableSafeguards
     {
